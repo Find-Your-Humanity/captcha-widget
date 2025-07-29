@@ -59,11 +59,11 @@ jobs:
                   # sed 명령어를 사용하여 frontend-deployment.yaml 파일의 이미지 태그를 업데이트
                   # 현재 YAML 파일의 이미지 라인이 'image: your-docker-registry/captcha-frontend:latest' 라고 가정합니다.
                   # 만약 초기 frontend-deployment.yaml의 image 필드가 다르다면 이 sed 명령어를 수정해야 합니다.
-                  sed -i "s|image: your-docker-registry/captcha-frontend:latest|image: $IMAGE_FULL_PATH|" frontend-deployment.yaml
+                  sed -i "s|image: ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:latest|image: $IMAGE_FULL_PATH|" frontend-deployment.yaml
 
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add frontend-deployment.yaml
+                  git add deployment-client.yaml
                   git commit -m "Update captcha-frontend image to ${{ github.sha }}" || echo "No changes to commit"
                   git push
               working-directory: ./deploy-manifests # deploy-manifests 디렉토리에서 명령어 실행
