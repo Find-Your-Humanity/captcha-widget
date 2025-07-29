@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
+import ImageBehaviorCollector from './ImageBehaviorCollector';
+
+interface ImageCaptchaProps {
+  onSuccess?: () => void;
+}
 
 interface ImageItem {
   id: number;
@@ -11,13 +16,63 @@ interface ImageItem {
   };
 }
 
-interface ImageCaptchaProps {
-  onSuccess?: () => void;
-}
-
 const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
+
+  useEffect(() => {
+    behaviorCollector.current.startTracking();
+    return () => {
+      behaviorCollector.current.stopTracking();
+    };
+  }, []);
+
+  const handleImageClick = (imageId: number) => {
+    const wasSelected = selectedImages.includes(imageId);
+    setSelectedImages(prev => {
+      if (wasSelected) {
+        return prev.filter(id => id !== imageId);
+      } else {
+        return [...prev, imageId];
+      }
+    });
+    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
+  };
+
+  const handleVerify = () => {
+    const selectedBikeImages = selectedImages.filter(id => {
+      const image = images.find(img => img.id === id);
+      return image?.hasBike;
+    });
+
+    const selectedNonBikeImages = selectedImages.filter(id => {
+      const image = images.find(img => img.id === id);
+      return image && !image.hasBike;
+    });
+
+    const isCorrect = selectedBikeImages.length === 3 && selectedNonBikeImages.length === 0;
+    
+    // 행동 데이터 기록 및 다운로드
+    behaviorCollector.current.trackVerifyAttempt(isCorrect);
+    behaviorCollector.current.downloadMetrics();
+
+    if (isCorrect) {
+      setIsVerified(true);
+      setTimeout(() => {
+        console.log('Image captcha verified successfully!');
+        onSuccess?.();
+      }, 1000);
+    } else {
+      setSelectedImages([]);
+    }
+  };
+
+  const handleRefresh = () => {
+    setSelectedImages([]);
+    setIsVerified(false);
+    behaviorCollector.current.trackRefresh();
+  };
 
   // 1장의 이미지를 9개 영역으로 나누어 사용
   const images: ImageItem[] = [
@@ -35,50 +90,16 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     { id: 9, hasBike: true, selected: false, gridPosition: { row: 3, col: 3 } },
   ];
 
-  const handleImageClick = (imageId: number) => {
-    setSelectedImages(prev => {
-      if (prev.includes(imageId)) {
-        return prev.filter(id => id !== imageId);
-      } else {
-        return [...prev, imageId];
-      }
-    });
-  };
-
-  const handleVerify = () => {
-    const selectedBikeImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image?.hasBike;
-    });
-
-    const selectedNonBikeImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image && !image.hasBike;
-    });
-
-    // 자전거가 있는 이미지만 선택하고, 자전거가 없는 이미지는 선택하지 않은 경우 성공
-    const isCorrect = selectedBikeImages.length === 3 && selectedNonBikeImages.length === 0;
-    
-    if (isCorrect) {
-      setIsVerified(true);
-      // 성공 시 부모 컴포넌트에 알림
-      setTimeout(() => {
-        console.log('Image captcha verified successfully!');
-        onSuccess?.(); // 부모 컴포넌트에 성공 알림
-      }, 1000);
-    } else {
-      // 실패 시 선택 초기화
-      setSelectedImages([]);
-    }
-  };
-
-  const handleRefresh = () => {
-    setSelectedImages([]);
-    setIsVerified(false);
-  };
-
   return (
-    <div className="image-captcha">
+    <div 
+      className="image-captcha"
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        behaviorCollector.current.trackMouseMove(x, y);
+      }}
+    >
       <div className="captcha-header">
         <span className="header-text">Select all images with a bike.</span>
       </div>
@@ -89,6 +110,8 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
             onClick={() => handleImageClick(image.id)}
+            onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
+            onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >
             <div 
               className="image-placeholder"
@@ -98,7 +121,6 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
                 backgroundSize: '300% 300%'
               }}
             >
-              {/* 선택 표시를 위한 오버레이 */}
               {selectedImages.includes(image.id) && (
                 <div className="selection-overlay">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
