@@ -1,0 +1,159 @@
+.captcha-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.captcha-button {
+  display: flex;
+  align-items: center;
+  width: 320px;
+  height: 60px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.captcha-button:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.captcha-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 12px;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 2px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox.error {
+  border-color: #f44336;
+}
+
+.checkbox-inner {
+  width: 12px;
+  height: 12px;
+  background-color: transparent;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-inner.error {
+  background-color: transparent;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #4285f4;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 10px;
+  color: #4285f4;
+  font-weight: 500;
+}
+
+.success-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.captcha-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captcha-text {
+  font-size: 14px;
+  color: #333333;
+  font-weight: 500;
+}
+
+.captcha-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-left: 12px;
+}
+
+.refresh-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-button:hover {
+  background-color: #f5f5f5;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* 상태별 스타일 */
+.captcha-button.loading {
+  background-color: #f8f9fa;
+}
+
+.captcha-button.success {
+  background-color: #f1f8e9;
+  border-color: #4caf50;
+}
+
+.captcha-button.error {
+  background-color: #ffebee;
+  border-color: #f44336;
+} 
