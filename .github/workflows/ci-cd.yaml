@@ -1,0 +1,68 @@
+name: CI/CD Pipeline for Captcha Frontend
+
+on:
+    push:
+        branches:
+            - main # main 브랜치에 푸시될 때 워크플로우 실행
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest # 워크플로우를 실행할 환경
+
+        steps:
+            - name: Checkout application code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18" # 당신의 프런트엔드 프로젝트에 맞는 Node.js 버전 지정
+
+            - name: Install dependencies
+              run: npm install # 또는 yarn install
+
+            - name: Build frontend
+              run: npm run build # 또는 yarn build (package.json에 정의된 빌드 스크립트)
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev # KakaoCloud Container Registry URL
+                  username: ${{ secrets.ACCESS_KEY }} # <--- ACCESS_KEY를 사용자 이름으로 사용
+                  password: ${{ secrets.ACCESS_SECRET_KEY }} # <--- ACCESS_SECRET_KEY를 비밀번호로 사용
+
+            - name: Build and push Docker image
+              id: docker_build
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  push: true
+                  # KakaoCloud Container Registry 경로에 PROJECT_NAME secret 활용
+                  tags: |
+                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:${{ github.sha }}
+                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:latest
+
+            - name: Checkout Kubernetes manifests repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Find-Your-Humanity/deploy-manifests # <--- 당신의 매니페스트 리포지토리 이름
+                  path: deploy-manifests # 매니페스트 리포지토리를 체크아웃할 로컬 경로
+                  token: ${{ secrets.PAT_KJH }} # <--- PAT_KJH secret 사용
+
+            - name: Update image tag in Kubernetes manifest
+              run: |
+                  IMAGE_FULL_PATH="${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:${{ github.sha }}"
+
+                  # sed 명령어를 사용하여 deployment-client.yaml 파일의 이미지 태그를 업데이트
+                  # 현재 YAML 파일의 image 라인인 'image: kc-sfacspace.kr-central-2.kcr.dev/team1-repo/{이미지 이름}:{태그 이름}'과 정확히 일치하도록 패턴 수정
+                  sed -i "s|image: kc-sfacspace.kr-central-2.kcr.dev/team1-repo/{이미지 이름}:{태그 이름}|image: $IMAGE_FULL_PATH|" deployment-client.yaml
+
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add deployment-client.yaml
+                  git commit -m "Update captcha-frontend image to ${{ github.sha }}" || echo "No changes to commit"
+                  git push
+              working-directory: ./deploy-manifests # deploy-manifests 디렉토리에서 명령어 실행
