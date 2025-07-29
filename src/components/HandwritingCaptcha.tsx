@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './HandwritingCaptcha.css';
+import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 
 interface HandwritingCaptchaProps {
   onSuccess?: () => void;
@@ -12,6 +13,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   const [drawingHistory, setDrawingHistory] = useState<ImageData[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
 
   // 이미지 데이터 (4~8.jpg 사용)
   const images = [
@@ -39,6 +41,14 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     context.strokeStyle = '#000000';
     context.lineWidth = 2;
     contextRef.current = context;
+
+    // 컴포넌트 마운트시 tracking 시작
+    behaviorCollector.current.startTracking();
+
+    // 컴포넌트 언마운트시 tracking 종료
+    return () => {
+      behaviorCollector.current.stopTracking();
+    };
   }, []);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -46,6 +56,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current?.beginPath();
     contextRef.current?.moveTo(offsetX, offsetY);
+    
+    // 행동 데이터 수집 시작
+    behaviorCollector.current.startStroke(offsetX, offsetY);
     
     // 그리기 시작할 때 현재 상태를 히스토리에 저장
     const canvas = canvasRef.current;
@@ -60,11 +73,17 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current?.lineTo(offsetX, offsetY);
     contextRef.current?.stroke();
+
+    // 행동 데이터 수집 중
+    behaviorCollector.current.addPoint(offsetX, offsetY);
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
     contextRef.current?.closePath();
+    
+    // 행동 데이터 수집 종료
+    behaviorCollector.current.endStroke();
   };
 
   const clearCanvas = () => {
@@ -74,6 +93,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     if (!context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
     setDrawingHistory([]);
+    
+    // 행동 데이터 초기화
+    behaviorCollector.current.reset();
   };
 
   const undoLastStroke = () => {
@@ -97,8 +119,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   };
 
   const handleVerify = () => {
-    // 간단한 검증 로직 (실제로는 더 복잡한 검증이 필요)
-    if (keywords.trim().length > 0) {
+    const isSuccess = drawingHistory.length > 0;
+    
+    // 검증 결과 설정
+    behaviorCollector.current.setVerificationResult(isSuccess);
+    
+    // 행동 데이터 다운로드
+    behaviorCollector.current.downloadMetrics();
+    
+    // 기존 검증 로직
+    if (isSuccess) {
       console.log('Handwriting captcha verified successfully!');
       onSuccess?.();
     } else {
