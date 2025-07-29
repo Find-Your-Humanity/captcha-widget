@@ -42,8 +42,8 @@ jobs:
                   push: true
                   # KakaoCloud Container Registry 경로에 PROJECT_NAME secret 활용
                   tags: |
-                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:${{ github.sha }} #
-                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:latest #
+                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:${{ github.sha }}
+                      ${{ secrets.PROJECT_NAME }}.kr-central-2.kcr.dev/${{ secrets.REPOSITORY_NAME }}/captcha-frontend:latest
 
             - name: Checkout Kubernetes manifests repository
               uses: actions/checkout@v4
