@@ -16,5 +16,5 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # 빌드 단계에서 생성된 React 정적 파일 복사
 COPY --from=builder /app/build /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]
