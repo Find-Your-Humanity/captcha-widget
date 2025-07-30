@@ -3,6 +3,7 @@ import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
 import WarmFeelingCaptcha from './WarmFeelingCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
+import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
 
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
@@ -35,19 +36,6 @@ const generateSessionId = () => {
   return `session${getNextSequence()}`;
 };
 
-const clearAllBehaviorData = () => {
-  // 기존 세션 데이터 모두 삭제
-  Object.keys(localStorage)
-    .filter(key => key.startsWith('captcha_behavior_') || 
-                  key.startsWith('image_behavior_') || 
-                  key.startsWith('warm_feeling_behavior_') || 
-                  key.startsWith('handwriting_behavior_'))
-    .forEach(key => localStorage.removeItem(key));
-  
-  // 세션 시퀀스 초기화
-  sessionStorage.removeItem(SESSION_SEQUENCE_KEY);
-};
-
 const Captcha: React.FC = () => {
   const [state, setState] = useState<CaptchaState>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -76,18 +64,18 @@ const Captcha: React.FC = () => {
 
   // 컴포넌트 마운트시 기존 데이터 정리
   useEffect(() => {
-    clearAllBehaviorData();
+    clearBehaviorData(); //기존 데이터 초기화
     
     // 이벤트 리스너 등록
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseEvent);
+    window.addEventListener('mousemove', handleMouseMove);//106번 줄
+    window.addEventListener('mousedown', handleMouseEvent);//137번 줄
     window.addEventListener('mouseup', handleMouseEvent);
     window.addEventListener('click', handleMouseEvent);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll);//146번 줄
 
     // 10초마다 로컬 스토리지에 자동 저장
     autoSaveIntervalRef.current = setInterval(() => {
-      saveBehaviorData(false);
+      saveBehaviorData(false); //153번 줄
     }, 10000);
 
     return () => {
@@ -103,7 +91,7 @@ const Captcha: React.FC = () => {
     };
   }, []);
 
-  // 상태 변경시 자동 저장 중지
+  // 상태 변경시 자동 저장 중지 및 데이터 다운로드
   useEffect(() => {
     if (state === 'image-captcha' || state === 'warm-feeling-captcha' || state === 'handwriting-captcha') {
       if (autoSaveIntervalRef.current) {
@@ -111,6 +99,7 @@ const Captcha: React.FC = () => {
         autoSaveIntervalRef.current = null;
       }
       saveBehaviorData(true);
+      downloadBehaviorData(); // 다음 단계로 넘어갈 때 데이터 다운로드
     }
   }, [state]);
 
@@ -161,135 +150,20 @@ const Captcha: React.FC = () => {
     });
   };
 
-  const saveBehaviorData = (shouldDownload: boolean = false) => {
-    try {
-      const data = {
-        ...behaviorDataRef.current,
-        pageEvents: {
-          ...behaviorDataRef.current.pageEvents,
-          exitTime: Date.now(),
-          totalTime: Date.now() - behaviorDataRef.current.pageEvents.enterTime,
-        },
-      };
-
-      // 로컬 스토리지에 저장
-      const storageKey = `captcha_behavior_${data.sessionId}`;
-      localStorage.setItem(storageKey, JSON.stringify(data));
-
-      if (shouldDownload) {
-        // 모든 세션 데이터 수집
-        const allSessions = Object.keys(localStorage)
-          .filter(key => key.startsWith('captcha_behavior_'))
-          .map(key => {
-            const sessionData = localStorage.getItem(key);
-            return sessionData ? JSON.parse(sessionData) : null;
-          })
-          .filter(Boolean);
-
-        // JS 파일 생성
-        const jsContent = `
-// Captcha Behavior Data
-const behaviorData = ${JSON.stringify(allSessions, null, 2)};
-
-// 데이터 분석을 위한 유틸리티 함수들
-const utils = {
-  // 총 마우스 이동 거리
-  getTotalMouseDistance() {
-    return behaviorData.reduce((total, session) => {
-      let sessionTotal = 0;
-      const movements = session.mouseMovements;
-      for (let i = 1; i < movements.length; i++) {
-        const dx = movements[i].x - movements[i-1].x;
-        const dy = movements[i].y - movements[i-1].y;
-        sessionTotal += Math.sqrt(dx * dx + dy * dy);
+  const saveBehaviorData = (isFinal: boolean = false) => {
+    const currentData = {
+      ...behaviorDataRef.current,
+      pageEvents: {
+        ...behaviorDataRef.current.pageEvents,
+        exitTime: isFinal ? Date.now() : undefined,
+        totalTime: isFinal ? Date.now() - behaviorDataRef.current.pageEvents.enterTime : undefined
       }
-      return total + sessionTotal;
-    }, 0);
-  },
-
-  // 클릭 분석
-  getClickAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalClicks: session.mouseClicks.length,
-      clickTypes: session.mouseClicks.reduce((acc, click) => {
-        acc[click.type] = (acc[click.type] || 0) + 1;
-        return acc;
-      }, {}),
-      clickPattern: session.mouseClicks.map(click => ({
-        type: click.type,
-        position: { x: click.x, y: click.y },
-        timestamp: click.timestamp
-      }))
-    }));
-  },
-
-  // 스크롤 분석
-  getScrollAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalScrolls: session.scrollEvents.length,
-      maxScroll: Math.max(...session.scrollEvents.map(e => e.position)),
-      scrollPattern: session.scrollEvents.map(e => ({
-        position: e.position,
-        timestamp: e.timestamp
-      }))
-    }));
-  },
-
-  // 세션 시간 분석
-  getTimeAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalTime: session.pageEvents.totalTime,
-      startTime: session.pageEvents.enterTime,
-      endTime: session.pageEvents.exitTime
-    }));
-  }
-};
-
-// 데이터 내보내기
-module.exports = {
-  behaviorData,
-  utils
-};`;
-
-        const blob = new Blob([jsContent], { type: 'application/javascript' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${data.sessionId}.js`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        // 다운로드 후 로컬 스토리지 클리어
-        Object.keys(localStorage)
-          .filter(key => key.startsWith('captcha_behavior_'))
-          .forEach(key => localStorage.removeItem(key));
-      }
-
-      // 데이터 초기화 및 새 세션 ID 생성
-      behaviorDataRef.current = {
-        mouseMovements: [],
-        mouseClicks: [],
-        scrollEvents: [],
-        pageEvents: {
-          enterTime: Date.now(),
-        },
-        sessionId: generateSessionId(),
-        userAgent: window.navigator.userAgent,
-        screenResolution: {
-          width: window.screen.width,
-          height: window.screen.height
-        }
-      };
-    } catch (error) {
-      console.error('행동 데이터 저장 중 오류 발생:', error);
-    }
+    };
+    
+    addBehaviorData(currentData);
   };
 
+  //captcha 체크박스 클릭 이벤트
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -297,26 +171,20 @@ module.exports = {
     if (state === 'initial') {
       setState('loading');
       setTimeout(() => {
-        const isSuccess = Math.random() > 0.5;
-        if (isSuccess) {
-          setState('success');
-          setTimeout(() => {
-            setCaptchaCount(prev => {
-              const newCount = prev + 1;
-              if (newCount % 3 === 0) {
-                setState('image-captcha');
-              } else if (newCount % 3 === 1) {
-                setState('warm-feeling-captcha');
-              } else {
-                setState('handwriting-captcha');
-              }
-              return newCount;
-            });
-          }, 1000);
-        } else {
-          setState('error');
-          setErrorMessage('잘못된 선택입니다. 다시 확인해주세요.');
-        }
+        setState('success');
+        setTimeout(() => {
+          setCaptchaCount(prev => {
+            const newCount = prev + 1;
+            if (newCount % 3 === 0) {
+              setState('image-captcha');
+            } else if (newCount % 3 === 1) {
+              setState('warm-feeling-captcha');
+            } else {
+              setState('handwriting-captcha');
+            }
+            return newCount;
+          });
+        }, 1000);
       }, 2000);
     } else if (state === 'error') {
       setState('initial');

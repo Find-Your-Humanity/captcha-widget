@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './WarmFeelingCaptcha.css';
+import WarmFeelingBehaviorCollector from './WarmFeelingBehaviorCollector';
+import { downloadBehaviorData } from '../utils/behaviorData';
 
 interface ImageItem {
   id: number;
@@ -15,6 +17,14 @@ interface WarmFeelingCaptchaProps {
 const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const behaviorCollector = useRef<WarmFeelingBehaviorCollector>(new WarmFeelingBehaviorCollector());
+
+  useEffect(() => {
+    behaviorCollector.current.startTracking();
+    return () => {
+      behaviorCollector.current.stopTracking();
+    };
+  }, []);
 
   // 9장의 개별 이미지 (2~10.jpg 파일들)
   const images: ImageItem[] = [
@@ -30,6 +40,7 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   ];
 
   const handleImageClick = (imageId: number) => {
+    const wasSelected = selectedImages.includes(imageId);
     setSelectedImages(prev => {
       if (prev.includes(imageId)) {
         return prev.filter(id => id !== imageId);
@@ -37,6 +48,7 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
         return [...prev, imageId];
       }
     });
+    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
   };
 
   const handleVerify = () => {
@@ -50,18 +62,19 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
       return image && !image.hasWarmFeeling;
     });
 
-    // 따뜻한 느낌의 이미지만 선택하고, 차가운 느낌의 이미지는 선택하지 않은 경우 성공
     const isCorrect = selectedWarmImages.length === 5 && selectedColdImages.length === 0;
     
+    // 행동 데이터 기록 및 다운로드
+    behaviorCollector.current.trackVerifyAttempt(isCorrect);
+    downloadBehaviorData();
+
     if (isCorrect) {
       setIsVerified(true);
-      // 성공 시 부모 컴포넌트에 알림
       setTimeout(() => {
         console.log('Warm feeling captcha verified successfully!');
-        onSuccess?.(); // 부모 컴포넌트에 성공 알림
+        onSuccess?.();
       }, 1000);
     } else {
-      // 실패 시 선택 초기화
       setSelectedImages([]);
     }
   };
@@ -69,10 +82,19 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   const handleRefresh = () => {
     setSelectedImages([]);
     setIsVerified(false);
+    behaviorCollector.current.trackRefresh();
   };
 
   return (
-    <div className="warm-feeling-captcha">
+    <div 
+      className="warm-feeling-captcha"
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        behaviorCollector.current.trackMouseMove(x, y);
+      }}
+    >
       <div className="captcha-header">
         <span className="header-text">Select all images with a warm feeling.</span>
       </div>
@@ -83,6 +105,8 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
             onClick={() => handleImageClick(image.id)}
+            onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
+            onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >
             <div className="image-placeholder">
               <img src={image.src} alt={`Image ${image.id}`} />
