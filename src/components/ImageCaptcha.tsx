@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
+import { downloadBehaviorData } from '../utils/behaviorData';
 
 interface ImageCaptchaProps {
   onSuccess?: () => void;
@@ -28,7 +29,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     };
   }, []);
 
-  const handleImageClick = (imageId: number) => {
+  const handleImageClick = (imageId: number, event: MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
     setSelectedImages(prev => {
       if (wasSelected) {
@@ -37,7 +38,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         return [...prev, imageId];
       }
     });
-    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
+    behaviorCollector.current.trackImageClick(imageId, event);
   };
 
   const handleVerify = () => {
@@ -55,7 +56,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     
     // 행동 데이터 기록 및 다운로드
     behaviorCollector.current.trackVerifyAttempt(isCorrect);
-    behaviorCollector.current.downloadMetrics();
+    downloadBehaviorData();
 
     if (isCorrect) {
       setIsVerified(true);
@@ -109,7 +110,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
           <div
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-            onClick={() => handleImageClick(image.id)}
+            onClick={(e) => handleImageClick(image.id, e.nativeEvent)}
             onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
             onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >
