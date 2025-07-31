@@ -5,7 +5,7 @@ import WarmFeelingCaptcha from './WarmFeelingCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
 import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
 import { detectDevice } from '../utils/deviceDetector';
-import { handleTouchStart, handleGesture, saveMobileBehaviorData, downloadMobileBehaviorData } from '../utils/mobileBehaviorData';
+import { handleTouchStart, handleTouchMove, handleTouchEnd, saveMobileBehaviorData, downloadMobileBehaviorData } from '../utils/mobileBehaviorData';
 
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
@@ -54,32 +54,50 @@ const Captcha: React.FC = () => {
 
   // 컴포넌트 마운트시 기존 데이터 정리
   useEffect(() => {
-    // const deviceType = detectDevice();
+    const deviceType = detectDevice();
     clearBehaviorData(); //기존 데이터 초기화
     
-    // 이벤트 리스너 등록
-    window.addEventListener('mousemove', handleMouseMove);//106번 줄
-    window.addEventListener('mousedown', handleMouseEvent);//137번 줄
-    window.addEventListener('mouseup', handleMouseEvent);
-    window.addEventListener('click', handleMouseEvent);
-    window.addEventListener('scroll', handleScroll);//146번 줄
+    if (deviceType === 'desktop') {
+      // 데스크톱: 마우스 이벤트 리스너 등록
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousedown', handleMouseEvent);
+      window.addEventListener('mouseup', handleMouseEvent);
+      window.addEventListener('click', handleMouseEvent);
+      window.addEventListener('scroll', handleScroll);
 
-   // 10초마다 로컬 스토리지에 자동 저장
-   autoSaveIntervalRef.current = setInterval(() => {
-    saveBehaviorData(false); //153번 줄
-  }, 10000);
+      // 10초마다 데스크톱 데이터 저장
+      autoSaveIntervalRef.current = setInterval(() => {
+        saveBehaviorData(false);
+      }, 10000);
+    } else {
+      // 모바일: 터치 이벤트 리스너 등록
+      window.addEventListener('touchstart', handleTouchStart);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+
+      // 10초마다 모바일 데이터 저장
+      autoSaveIntervalRef.current = setInterval(() => {
+        saveMobileBehaviorData();
+      }, 10000);
+    }
 
     return () => {
-      // if (deviceType === 'desktop') {
+      if (deviceType === 'desktop') {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mousedown', handleMouseEvent);
         window.removeEventListener('mouseup', handleMouseEvent);
         window.removeEventListener('click', handleMouseEvent);
         window.removeEventListener('scroll', handleScroll);
+        saveBehaviorData(true);
+      } else {
+        window.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+        saveMobileBehaviorData();
+      }
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
-      saveBehaviorData(true);
     };
   }, []);
 
@@ -90,8 +108,15 @@ const Captcha: React.FC = () => {
         clearInterval(autoSaveIntervalRef.current);
         autoSaveIntervalRef.current = null;
       }
-      saveBehaviorData(true);
-      downloadBehaviorData(); // 다음 단계로 넘어갈 때 데이터 다운로드
+
+      const deviceType = detectDevice();
+      if (deviceType === 'desktop') {
+        saveBehaviorData(true);
+        downloadBehaviorData();
+      } else {
+        saveMobileBehaviorData();
+        downloadMobileBehaviorData();
+      }
     }
   }, [state]);
 

@@ -1,224 +1,210 @@
-interface TouchPoint {
-  x: number;
-  y: number;
+// 모바일 터치 데이터 타입 정의
+interface TouchData {
+  startTime: number;
+  endTime?: number;
+  duration?: number;
+  startPosition: { x: number; y: number };
+  endPosition?: { x: number; y: number };
   force: number;
-  timestamp: number;
-}
-
-interface Gesture {
-  type: 'swipe' | 'pinch' | 'drag';
-  startPoints: TouchPoint[];
-  endPoints: TouchPoint[];
-  duration: number;
+  touchPoints: Array<{
+    x: number;
+    y: number;
+    timestamp: number;
+    force: number;
+  }>;
   distance?: number;
-  scale?: number;
-  direction?: 'left' | 'right' | 'up' | 'down';
+  speed?: number;
+  isMultiTouch: boolean;
+  touchCount: number;
 }
 
-interface TouchInteraction {
-  touchPoints: TouchPoint[];
-  gestures: Gesture[];
-  touchIntervals: number[];  // 연속 터치 간격
-  averageTouchInterval: number;
-  touchPressures: number[];  // 터치 압력 값들
-  touchDistribution: {       // 터치 위치 분포
-    leftHalf: number;
-    rightHalf: number;
-    topHalf: number;
-    bottomHalf: number;
-  };
-}
-
-interface MobileBehaviorData {
+interface MobileBehaviorMetrics {
   sessionId: string;
   startTime: number;
-  endTime: number;
+  endTime?: number;
   deviceInfo: {
     userAgent: string;
-    screenSize: {
-      width: number;
-      height: number;
-    };
+    screenSize: { width: number; height: number };
     orientation: 'portrait' | 'landscape';
   };
-  touchInteractions: TouchInteraction;
+  touchEvents: TouchData[];
+  touchPatterns: {
+    averageDuration: number;
+    averageForce: number;
+    averageDistance: number;
+    averageSpeed: number;
+    multiTouchCount: number;
+    totalTouches: number;
+  };
 }
 
-let mobileBehaviorStore: MobileBehaviorData[] = [];
-let currentTouchInteraction: TouchInteraction = {
-  touchPoints: [],
-  gestures: [],
-  touchIntervals: [],
-  averageTouchInterval: 0,
-  touchPressures: [],
-  touchDistribution: {
-    leftHalf: 0,
-    rightHalf: 0,
-    topHalf: 0,
-    bottomHalf: 0
+// 현재 세션의 데이터 저장소
+let currentTouchData: TouchData | null = null;
+let mobileBehaviorStore: MobileBehaviorMetrics = {
+  sessionId: `mobile_${Date.now()}`,
+  startTime: Date.now(),
+  deviceInfo: {
+    userAgent: navigator.userAgent,
+    screenSize: {
+      width: window.screen.width,
+      height: window.screen.height
+    },
+    orientation: window.screen.height > window.screen.width ? 'portrait' : 'landscape'
+  },
+  touchEvents: [],
+  touchPatterns: {
+    averageDuration: 0,
+    averageForce: 0,
+    averageDistance: 0,
+    averageSpeed: 0,
+    multiTouchCount: 0,
+    totalTouches: 0
   }
 };
 
-let lastTouchTimestamp = 0;
-
-// 터치 이벤트 처리
-function handleTouchStart(event: TouchEvent): void {
-  const touches = Array.from(event.touches);
-  const timestamp = Date.now();
-  
-  // 터치 간격 계산
-  if (lastTouchTimestamp > 0) {
-    const interval = timestamp - lastTouchTimestamp;
-    currentTouchInteraction.touchIntervals.push(interval);
-    currentTouchInteraction.averageTouchInterval = 
-      currentTouchInteraction.touchIntervals.reduce((a, b) => a + b, 0) / 
-      currentTouchInteraction.touchIntervals.length;
-  }
-  lastTouchTimestamp = timestamp;
-
-  // 터치 포인트 저장
-  touches.forEach(touch => {
-    const point: TouchPoint = {
+// 터치 시작 이벤트 처리
+export function handleTouchStart(event: TouchEvent): void {
+  const touch = event.touches[0];
+  currentTouchData = {
+    startTime: Date.now(),
+    startPosition: {
+      x: touch.clientX,
+      y: touch.clientY
+    },
+    force: touch.force || 0,
+    touchPoints: [{
       x: touch.clientX,
       y: touch.clientY,
-      force: touch.force || 0,
-      timestamp
-    };
-    currentTouchInteraction.touchPoints.push(point);
-    currentTouchInteraction.touchPressures.push(point.force);
+      timestamp: Date.now(),
+      force: touch.force || 0
+    }],
+    isMultiTouch: event.touches.length > 1,
+    touchCount: event.touches.length
+  };
 
-    // 터치 위치 분포 업데이트
-    const rect = document.body.getBoundingClientRect();
-    const midX = rect.width / 2;
-    const midY = rect.height / 2;
+  if (currentTouchData.isMultiTouch) {
+    mobileBehaviorStore.touchPatterns.multiTouchCount++;
+  }
+  mobileBehaviorStore.touchPatterns.totalTouches++;
+}
 
-    if (point.x < midX) currentTouchInteraction.touchDistribution.leftHalf++;
-    else currentTouchInteraction.touchDistribution.rightHalf++;
-    if (point.y < midY) currentTouchInteraction.touchDistribution.topHalf++;
-    else currentTouchInteraction.touchDistribution.bottomHalf++;
+// 터치 이동 이벤트 처리
+export function handleTouchMove(event: TouchEvent): void {
+  if (!currentTouchData) return;
+
+  const touch = event.touches[0];
+  currentTouchData.touchPoints.push({
+    x: touch.clientX,
+    y: touch.clientY,
+    timestamp: Date.now(),
+    force: touch.force || 0
   });
 }
 
-// 제스처 감지 및 처리
-function handleGesture(event: TouchEvent, type: 'swipe' | 'pinch' | 'drag'): void {
-  const touches = Array.from(event.touches);
-  const timestamp = Date.now();
+// 터치 종료 이벤트 처리
+export function handleTouchEnd(event: TouchEvent): void {
+  if (!currentTouchData) return;
 
-  if (touches.length >= 2 && type === 'pinch') {
-    // 핀치 제스처 처리
-    const touch1 = touches[0];
-    const touch2 = touches[1];
-    const distance = Math.hypot(
-      touch2.clientX - touch1.clientX,
-      touch2.clientY - touch1.clientY
-    );
+  const endTime = Date.now();
+  const lastTouch = event.changedTouches[0];
 
-    currentTouchInteraction.gestures.push({
-      type: 'pinch',
-      startPoints: currentTouchInteraction.touchPoints.slice(-2),
-      endPoints: touches.map(t => ({
-        x: t.clientX,
-        y: t.clientY,
-        force: t.force || 0,
-        timestamp
-      })),
-      duration: timestamp - lastTouchTimestamp,
-      distance,
-      scale: event instanceof TouchEvent ? (event as any).scale : undefined
-    });
-  } else {
-    // 스와이프/드래그 제스처 처리
-    const touch = touches[0];
-    const startPoint = currentTouchInteraction.touchPoints[0];
-    if (!startPoint) return;
+  // 터치 데이터 완성
+  currentTouchData.endTime = endTime;
+  currentTouchData.duration = endTime - currentTouchData.startTime;
+  currentTouchData.endPosition = {
+    x: lastTouch.clientX,
+    y: lastTouch.clientY
+  };
 
-    const dx = touch.clientX - startPoint.x;
-    const dy = touch.clientY - startPoint.y;
-    const distance = Math.hypot(dx, dy);
-    
-    let direction: 'left' | 'right' | 'up' | 'down' | undefined;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      direction = dx > 0 ? 'right' : 'left';
-    } else {
-      direction = dy > 0 ? 'down' : 'up';
-    }
+  // 이동 거리 계산
+  const dx = currentTouchData.endPosition.x - currentTouchData.startPosition.x;
+  const dy = currentTouchData.endPosition.y - currentTouchData.startPosition.y;
+  currentTouchData.distance = Math.sqrt(dx * dx + dy * dy);
 
-    currentTouchInteraction.gestures.push({
-      type,
-      startPoints: [startPoint],
-      endPoints: [{
-        x: touch.clientX,
-        y: touch.clientY,
-        force: touch.force || 0,
-        timestamp
-      }],
-      duration: timestamp - startPoint.timestamp,
-      distance,
-      direction
-    });
-  }
+  // 속도 계산 (픽셀/밀리초)
+  currentTouchData.speed = currentTouchData.distance / currentTouchData.duration;
+
+  // 전체 데이터 저장
+  mobileBehaviorStore.touchEvents.push(currentTouchData);
+
+  // 패턴 데이터 업데이트
+  updateTouchPatterns();
+
+  // 현재 터치 데이터 초기화
+  currentTouchData = null;
+}
+
+// 터치 패턴 분석 업데이트
+function updateTouchPatterns(): void {
+  const events = mobileBehaviorStore.touchEvents;
+  if (events.length === 0) return;
+
+  mobileBehaviorStore.touchPatterns = {
+    averageDuration: events.reduce((sum, e) => sum + (e.duration || 0), 0) / events.length,
+    averageForce: events.reduce((sum, e) => sum + e.force, 0) / events.length,
+    averageDistance: events.reduce((sum, e) => sum + (e.distance || 0), 0) / events.length,
+    averageSpeed: events.reduce((sum, e) => sum + (e.speed || 0), 0) / events.length,
+    multiTouchCount: events.filter(e => e.isMultiTouch).length,
+    totalTouches: events.length
+  };
 }
 
 // 데이터 저장
-function saveMobileBehaviorData(): void {
+export function saveMobileBehaviorData(): void {
   try {
     const currentSequence = parseInt(localStorage.getItem('mobile_sequence') || '0');
     const nextSequence = currentSequence + 1;
     const storageKey = `mobile_behavior_${nextSequence}`;
-    
-    const data: MobileBehaviorData = {
-      sessionId: `mobile_${Date.now()}`,
-      startTime: currentTouchInteraction.touchPoints[0]?.timestamp || Date.now(),
-      endTime: Date.now(),
-      deviceInfo: {
-        userAgent: navigator.userAgent,
-        screenSize: {
-          width: window.screen.width,
-          height: window.screen.height
-        },
-        orientation: window.screen.height > window.screen.width ? 'portrait' : 'landscape'
-      },
-      touchInteractions: currentTouchInteraction
-    };
 
-    localStorage.setItem(storageKey, JSON.stringify(data));
-    localStorage.setItem('mobile_sequence', nextSequence.toString());
+    mobileBehaviorStore.endTime = Date.now();
     
-    // 현재 세션 데이터 초기화
-    currentTouchInteraction = {
-      touchPoints: [],
-      gestures: [],
-      touchIntervals: [],
-      averageTouchInterval: 0,
-      touchPressures: [],
-      touchDistribution: {
-        leftHalf: 0,
-        rightHalf: 0,
-        topHalf: 0,
-        bottomHalf: 0
-      }
-    };
+    localStorage.setItem(storageKey, JSON.stringify(mobileBehaviorStore));
+    localStorage.setItem('mobile_sequence', nextSequence.toString());
     
     console.log('모바일 행동 데이터가 저장되었습니다:', {
       시퀀스번호: nextSequence,
-      저장키: storageKey
+      저장키: storageKey,
+      데이터: mobileBehaviorStore
     });
+
+    // 새로운 세션 시작
+    mobileBehaviorStore = {
+      sessionId: `mobile_${Date.now()}`,
+      startTime: Date.now(),
+      deviceInfo: mobileBehaviorStore.deviceInfo,
+      touchEvents: [],
+      touchPatterns: {
+        averageDuration: 0,
+        averageForce: 0,
+        averageDistance: 0,
+        averageSpeed: 0,
+        multiTouchCount: 0,
+        totalTouches: 0
+      }
+    };
   } catch (error) {
     console.error('모바일 데이터 저장 중 오류:', error);
   }
 }
 
 // 데이터 다운로드
-function downloadMobileBehaviorData(): void {
+export function downloadMobileBehaviorData(): void {
   try {
     const currentSequence = parseInt(localStorage.getItem('mobile_sequence') || '0');
-    let allData: MobileBehaviorData[] = [];
+    let allData = [];
     
+    // 모든 시퀀스의 데이터 수집
     for (let i = 1; i <= currentSequence; i++) {
       const data = localStorage.getItem(`mobile_behavior_${i}`);
       if (data) {
         allData.push(JSON.parse(data));
       }
+    }
+
+    // 현재 진행 중인 세션 데이터도 포함
+    if (mobileBehaviorStore.touchEvents.length > 0) {
+      mobileBehaviorStore.endTime = Date.now();
+      allData.push({...mobileBehaviorStore});
     }
 
     const jsonData = JSON.stringify(allData, null, 2);
@@ -235,10 +221,3 @@ function downloadMobileBehaviorData(): void {
     console.error('모바일 데이터 다운로드 중 오류:', error);
   }
 }
-
-export {
-  handleTouchStart,
-  handleGesture,
-  saveMobileBehaviorData,
-  downloadMobileBehaviorData
-};
