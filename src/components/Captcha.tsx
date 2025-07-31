@@ -4,6 +4,8 @@ import ImageCaptcha from './ImageCaptcha';
 import WarmFeelingCaptcha from './WarmFeelingCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
 import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
+import { detectDevice } from '../utils/deviceDetector';
+import { handleTouchStart, handleGesture, saveMobileBehaviorData, downloadMobileBehaviorData } from '../utils/mobileBehaviorData';
 
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
@@ -14,9 +16,6 @@ interface BehaviorData {
     exitTime?: number;
     totalTime?: number;
   };
-  sessionId: string;
-  userAgent: string;
-  screenResolution: { width: number; height: number };
 }
 
 type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'warm-feeling-captcha' | 'handwriting-captcha';
@@ -32,9 +31,6 @@ const getNextSequence = (): number => {
   return nextSequence;
 };
 
-const generateSessionId = () => {
-  return `session${getNextSequence()}`;
-};
 
 const Captcha: React.FC = () => {
   const [state, setState] = useState<CaptchaState>('initial');
@@ -50,12 +46,6 @@ const Captcha: React.FC = () => {
     scrollEvents: [],
     pageEvents: {
       enterTime: Date.now(),
-    },
-    sessionId: generateSessionId(),
-    userAgent: window.navigator.userAgent,
-    screenResolution: {
-      width: window.screen.width,
-      height: window.screen.height
     }
   });
 
@@ -64,6 +54,7 @@ const Captcha: React.FC = () => {
 
   // 컴포넌트 마운트시 기존 데이터 정리
   useEffect(() => {
+    // const deviceType = detectDevice();
     clearBehaviorData(); //기존 데이터 초기화
     
     // 이벤트 리스너 등록
@@ -73,17 +64,18 @@ const Captcha: React.FC = () => {
     window.addEventListener('click', handleMouseEvent);
     window.addEventListener('scroll', handleScroll);//146번 줄
 
-    // 10초마다 로컬 스토리지에 자동 저장
-    autoSaveIntervalRef.current = setInterval(() => {
-      saveBehaviorData(false); //153번 줄
-    }, 10000);
+   // 10초마다 로컬 스토리지에 자동 저장
+   autoSaveIntervalRef.current = setInterval(() => {
+    saveBehaviorData(false); //153번 줄
+  }, 10000);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseEvent);
-      window.removeEventListener('mouseup', handleMouseEvent);
-      window.removeEventListener('click', handleMouseEvent);
-      window.removeEventListener('scroll', handleScroll);
+      // if (deviceType === 'desktop') {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mousedown', handleMouseEvent);
+        window.removeEventListener('mouseup', handleMouseEvent);
+        window.removeEventListener('click', handleMouseEvent);
+        window.removeEventListener('scroll', handleScroll);
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
@@ -160,7 +152,21 @@ const Captcha: React.FC = () => {
       }
     };
     
+    // 데이터를 저장하고 behaviorDataRef 초기화
     addBehaviorData(currentData);
+    
+    // 저장 후 새로운 이벤트 수집을 위해 배열들 초기화
+    if (!isFinal) {
+      behaviorDataRef.current = {
+        ...behaviorDataRef.current,
+        mouseMovements: [],
+        mouseClicks: [],
+        scrollEvents: [],
+        pageEvents: {
+          enterTime: Date.now(),
+        }
+      };
+    }
   };
 
   //captcha 체크박스 클릭 이벤트

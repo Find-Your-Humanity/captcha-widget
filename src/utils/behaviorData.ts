@@ -28,6 +28,9 @@ export interface ImageInteraction {
 // 행동 데이터 저장소
 let behaviorDataStore: any[] = [];
 
+// 마지막 저장 시점
+let lastSaveTimestamp: number = 0;
+
 // 시퀀스 카운터
 const sequenceCounters = {
   captcha: 0,
@@ -36,16 +39,10 @@ const sequenceCounters = {
   handwriting: 0
 };
 
-// 컴포넌트 타입 확인
-function getComponentType(data: any): string {
-  if (data.sessionId.includes('image_')) {
-    return 'image';
-  } else if (data.sessionId.includes('warm_feeling_')) {
-    return 'warmFeeling';
-  } else if (data.sessionId.includes('handwriting_')) {
-    return 'handwriting';
-  }
-  return 'captcha';
+// 현재 시간 기반으로 파일명 생성
+function getCurrentTimeString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
 }
 
 // 시퀀스 번호 생성
@@ -65,8 +62,26 @@ function addBehaviorData(data: any): void {
 //captcha setInterval 10초마다 저장
 function saveBehaviorData(): void {
   try {
-    localStorage.setItem('behavior_data', JSON.stringify(behaviorDataStore));
-    localStorage.setItem('sequence_counters', JSON.stringify(sequenceCounters));
+    // 현재 시퀀스 번호 가져오기
+    const currentSequence = parseInt(localStorage.getItem('current_sequence') || '0');
+    const nextSequence = currentSequence + 1;
+    
+    // 새로운 키로 현재 데이터 저장
+    const storageKey = `behavior_data_${nextSequence}`;
+    
+    // 데이터 저장
+    localStorage.setItem(storageKey, JSON.stringify(behaviorDataStore));
+    localStorage.setItem('current_sequence', nextSequence.toString());
+    
+    // 디버깅을 위한 로그
+    console.log('행동 데이터가 저장되었습니다:', {
+      시퀀스번호: nextSequence,
+      저장키: storageKey,
+      데이터길이: behaviorDataStore.length
+    });
+
+    // 저장 후 behaviorDataStore 초기화
+    behaviorDataStore = [];
   } catch (error) {
     console.error('행동 데이터 저장 중 오류:', error);
   }
@@ -75,14 +90,19 @@ function saveBehaviorData(): void {
 // 행동 데이터 로드
 function loadBehaviorData(): void {
   try {
-    const data = localStorage.getItem('behavior_data');
-    const counters = localStorage.getItem('sequence_counters');
-    if (data) {
-      behaviorDataStore = JSON.parse(data);
+    const currentSequence = parseInt(localStorage.getItem('current_sequence') || '0');
+    let allData: any[] = [];
+    
+    // 모든 시퀀스의 데이터 로드
+    for (let i = 1; i <= currentSequence; i++) {
+      const sequenceData = localStorage.getItem(`behavior_data_${i}`);
+      if (sequenceData) {
+        const parsedData = JSON.parse(sequenceData);
+        allData = allData.concat(parsedData);
+      }
     }
-    if (counters) {
-      Object.assign(sequenceCounters, JSON.parse(counters));
-    }
+    
+    behaviorDataStore = allData;
   } catch (error) {
     console.error('행동 데이터 로드 중 오류:', error);
   }
@@ -90,41 +110,62 @@ function loadBehaviorData(): void {
 
 // 행동 데이터 초기화
 function clearBehaviorData(): void {
-  behaviorDataStore = [];
+  behaviorDataStore = [];  // 배열로 초기화
+  lastSaveTimestamp = 0;   // 마지막 저장 시점 초기화
   Object.keys(sequenceCounters).forEach(key => {
     sequenceCounters[key as keyof typeof sequenceCounters] = 0;
   });
-  localStorage.removeItem('behavior_data');
+  
+  // 기존 시퀀스 데이터 모두 삭제
+  const currentSequence = parseInt(localStorage.getItem('current_sequence') || '0');
+  for (let i = 1; i <= currentSequence; i++) {
+    localStorage.removeItem(`behavior_data_${i}`);
+  }
+  
+  localStorage.removeItem('current_sequence');
   localStorage.removeItem('sequence_counters');
 }
 
 // 행동 데이터 다운로드
 function downloadBehaviorData(): void {
   try {
-    const data = JSON.stringify(behaviorDataStore, null, 2);
+    // localStorage에서 모든 데이터 수집
+    const currentSequence = parseInt(localStorage.getItem('current_sequence') || '0');
+    let allData: any[] = [];
+    
+    // 모든 시퀀스의 데이터 수집
+    for (let i = 1; i <= currentSequence; i++) {
+      const sequenceData = localStorage.getItem(`behavior_data_${i}`);
+      if (sequenceData) {
+        const parsedData = JSON.parse(sequenceData);
+        allData = allData.concat(parsedData);
+      }
+    }
+    
+    // 현재 메모리에 있는 데이터도 추가 (아직 저장되지 않은 데이터)
+    if (behaviorDataStore.length > 0) {
+      allData = allData.concat(behaviorDataStore);
+    }
+    
+    const data = JSON.stringify(allData, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
 
-    // 마지막 데이터의 컴포넌트 타입 확인
-    const lastData = behaviorDataStore[behaviorDataStore.length - 1];
-    const componentType = getComponentType(lastData);
-    const sequence = getNextSequence(componentType);
-
-    // 컴포넌트별 파일명 생성
-    const fileNames = {
-      captcha: `captcha_session${sequence}`,
-      image: `image_captcha_session${sequence}`,
-      warmFeeling: `warm_feeling_captcha_session${sequence}`,
-      handwriting: `handwriting_captcha_session${sequence}`
-    };
-
-    link.download = `${fileNames[componentType as keyof typeof fileNames]}.json`;
+    // 현재 시간 기반으로 파일명 생성
+    const timeString = getCurrentTimeString();
+    link.download = `behavior_data_${timeString}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+    
+    console.log('데이터 다운로드 완료:', {
+      시퀀스개수: currentSequence,
+      전체데이터수: allData.length,
+      현재메모리데이터수: behaviorDataStore.length
+    });
   } catch (error) {
     console.error('데이터 다운로드 중 오류:', error);
   }
