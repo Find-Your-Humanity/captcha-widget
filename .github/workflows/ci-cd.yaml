@@ -69,4 +69,4 @@ jobs:
                   git add deployment-client.yaml
                   git commit -m "Update captcha-frontend image to ${{ github.sha }}" || echo "No changes to commit"
                   git push
-              working-directory: ./deploy-manifests # deploy-manifests 디렉토리에서 명령어 실행
+              working-directory: ./deploy-manifests/captcha # deploy-manifests/captcha 디렉토리에서 명령어 실행
