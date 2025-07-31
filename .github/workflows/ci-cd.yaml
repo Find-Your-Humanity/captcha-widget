@@ -4,6 +4,12 @@ on:
     push:
         branches:
             - main # main 브랜치에 푸시될 때 워크플로우 실행
+    merge:
+        branches:
+            - main # main 브랜치에 머지될 때 워크플로우 실행
+    pull_request:
+        branches:
+            - main # main 브랜치에 대한 PR이 열릴 때 워크플로우 실행
 
 jobs:
     build-and-deploy:
