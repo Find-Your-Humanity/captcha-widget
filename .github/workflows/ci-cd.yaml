@@ -50,7 +50,7 @@ jobs:
               with:
                   repository: Find-Your-Humanity/deploy-manifests # <--- 당신의 매니페스트 리포지토리 이름
                   path: deploy-manifests # 매니페스트 리포지토리를 체크아웃할 로컬 경로
-                  token: ${{ secrets.PAT_KJH }} # <--- PAT_KJH secret 사용
+                  token: ${{ secrets.PAT }} # <--- PAT_KJH secret 사용
 
             - name: Update image tag in Kubernetes manifest
               run: |
