@@ -1,0 +1,78 @@
+{
+  "cdn": {
+    "name": "Real Captcha Widget CDN",
+    "description": "캡차 위젯을 빠르게 로드하기 위한 CDN 서비스",
+    "providers": {
+      "aws": {
+        "name": "Amazon CloudFront",
+        "regions": ["ap-northeast-2", "us-east-1", "eu-west-1"],
+        "caching": {
+          "js_files": "max-age=31536000",
+          "html_files": "max-age=3600",
+          "json_files": "max-age=86400"
+        }
+      },
+      "kakao": {
+        "name": "카카오클라우드 CDN",
+        "regions": ["kr-central-1"],
+        "caching": {
+          "js_files": "max-age=31536000",
+          "html_files": "max-age=3600",
+          "json_files": "max-age=86400"
+        }
+      }
+    },
+    "optimization": {
+      "compression": {
+        "gzip": true,
+        "brotli": true
+      },
+      "minification": {
+        "js": true,
+        "css": true,
+        "html": false
+      },
+      "bundling": {
+        "react_external": true,
+        "react_dom_external": true
+      }
+    }
+  },
+  "monitoring": {
+    "performance": {
+      "target_load_time": "< 500ms",
+      "target_cache_hit_rate": "> 95%",
+      "target_availability": "> 99.9%"
+    },
+    "alerts": {
+      "slow_response": {
+        "threshold": "1s",
+        "enabled": true
+      },
+      "high_error_rate": {
+        "threshold": "5%",
+        "enabled": true
+      },
+      "low_cache_hit": {
+        "threshold": "90%",
+        "enabled": true
+      }
+    }
+  },
+  "security": {
+    "cors": {
+      "allowed_origins": ["*"],
+      "allowed_methods": ["GET", "HEAD"],
+      "allowed_headers": ["Content-Type", "Authorization"]
+    },
+    "integrity": {
+      "enabled": true,
+      "algorithms": ["sha256", "sha512"]
+    },
+    "headers": {
+      "x_content_type_options": "nosniff",
+      "x_frame_options": "SAMEORIGIN",
+      "referrer_policy": "strict-origin-when-cross-origin"
+    }
+  }
+}
