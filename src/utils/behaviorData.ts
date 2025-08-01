@@ -35,7 +35,7 @@ let lastSaveTimestamp: number = 0;
 const sequenceCounters = {
   captcha: 0,
   image: 0,
-  warmFeeling: 0,
+  abstractFeeling: 0,
   handwriting: 0
 };
 

@@ -6,7 +6,7 @@ interface Point {
   timestamp: number;
 }
 
-interface WarmFeelingBehaviorMetrics {
+interface AbstractBehaviorMetrics {
   sessionId: string;
   startTime: number;
   endTime: number;
@@ -41,8 +41,8 @@ interface WarmFeelingBehaviorMetrics {
   attemptDuration: number;
 }
 
-class WarmFeelingBehaviorCollector {
-  private metrics: WarmFeelingBehaviorMetrics;
+class ImageBehaviorCollector {
+  private metrics: AbstractBehaviorMetrics;
   private isTracking: boolean = false;
   private lastMousePosition: Point | null = null;
 
@@ -161,4 +161,4 @@ class WarmFeelingBehaviorCollector {
   }
 }
 
-export default WarmFeelingBehaviorCollector; 
+export default ImageBehaviorCollector; 

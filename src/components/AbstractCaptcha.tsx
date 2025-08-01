@@ -1,23 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './WarmFeelingCaptcha.css';
-import WarmFeelingBehaviorCollector from './WarmFeelingBehaviorCollector';
+import './AbstractCaptcha.css';
+import ImageBehaviorCollector from './ImageBehaviorCollector';
 import { downloadBehaviorData } from '../utils/behaviorData';
 
 interface ImageItem {
   id: number;
   src: string;
-  hasWarmFeeling: boolean;
+  hasAbstractFeeling: boolean;
   selected: boolean;
 }
 
-interface WarmFeelingCaptchaProps {
+interface AbstractCaptchaProps {
   onSuccess?: () => void;
 }
 
-const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) => {
+const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
-  const behaviorCollector = useRef<WarmFeelingBehaviorCollector>(new WarmFeelingBehaviorCollector());
+  const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
@@ -28,15 +28,15 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
 
   // 9장의 개별 이미지 (2~10.jpg 파일들)
   const images: ImageItem[] = [
-    { id: 1, src: '/2.jpg', hasWarmFeeling: true, selected: false },
-    { id: 2, src: '/3.jpg', hasWarmFeeling: true, selected: false },
-    { id: 3, src: '/4.jpg', hasWarmFeeling: true, selected: false },
-    { id: 4, src: '/5.jpg', hasWarmFeeling: false, selected: false },
-    { id: 5, src: '/6.jpg', hasWarmFeeling: false, selected: false },
-    { id: 6, src: '/7.jpg', hasWarmFeeling: false, selected: false },
-    { id: 7, src: '/8.jpg', hasWarmFeeling: true, selected: false },
-    { id: 8, src: '/9.jpg', hasWarmFeeling: false, selected: false },
-    { id: 9, src: '/10.jpg', hasWarmFeeling: true, selected: false },
+    { id: 1, src: '/2.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 2, src: '/3.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 3, src: '/4.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 4, src: '/5.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 5, src: '/6.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 6, src: '/7.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 7, src: '/8.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 8, src: '/9.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 9, src: '/10.jpg', hasAbstractFeeling: true, selected: false },
   ];
 
   const handleImageClick = (imageId: number) => {
@@ -54,19 +54,19 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   const handleVerify = () => {
     const selectedWarmImages = selectedImages.filter(id => {
       const image = images.find(img => img.id === id);
-      return image?.hasWarmFeeling;
+      return image?.hasAbstractFeeling;
     });
 
     const selectedColdImages = selectedImages.filter(id => {
       const image = images.find(img => img.id === id);
-      return image && !image.hasWarmFeeling;
+      return image && !image.hasAbstractFeeling;
     });
 
     const isCorrect = selectedWarmImages.length === 5 && selectedColdImages.length === 0;
     
     // 행동 데이터 기록 및 다운로드
     behaviorCollector.current.trackVerifyAttempt(isCorrect);
-    downloadBehaviorData();
+    behaviorCollector.current.downloadMetrics(`abstractcaptcha_behavior_${Date.now()}.json`);
 
     if (isCorrect) {
       setIsVerified(true);
@@ -163,4 +163,4 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   );
 };
 
-export default WarmFeelingCaptcha; 
+export default AbstractCaptcha; 

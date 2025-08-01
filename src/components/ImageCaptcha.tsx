@@ -56,7 +56,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     
     // 행동 데이터 기록 및 다운로드
     behaviorCollector.current.trackVerifyAttempt(isCorrect);
-    downloadBehaviorData();
+    behaviorCollector.current.downloadMetrics();
 
     if (isCorrect) {
       setIsVerified(true);

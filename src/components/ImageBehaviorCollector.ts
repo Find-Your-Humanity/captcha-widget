@@ -168,6 +168,18 @@ class ImageBehaviorCollector {
     this.saveToLocalStorage();
   }
 
+  public trackImageSelection(imageId: number, isSelected: boolean): void {
+    if (!this.isTracking) return;
+    // 선택/해제 순서 기록
+    if (isSelected) {
+      this.metrics.selectionOrder.push(imageId);
+      this.metrics.imageInteractions[imageId].isSelected = true;
+    } else {
+      this.metrics.deselectionOrder.push(imageId);
+      this.metrics.imageInteractions[imageId].isSelected = false;
+    }
+  }
+
   private updateInteractionDensity(interaction: ImageInteraction): void {
     const totalTime = Date.now() - this.metrics.startTime;
     interaction.interactionDensity.averageDwellTime = 
@@ -186,13 +198,13 @@ class ImageBehaviorCollector {
     }
   }
 
-  public downloadMetrics(): void {
+  public downloadMetrics(filename?: string): void {
     const data = JSON.stringify(this.metrics, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `image_behavior_${this.metrics.sessionId}.json`;
+    link.download = filename || `image_behavior_${this.metrics.sessionId}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

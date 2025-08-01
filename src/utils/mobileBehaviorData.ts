@@ -204,19 +204,26 @@ export function downloadMobileBehaviorData(): void {
     // 현재 진행 중인 세션 데이터도 포함
     if (mobileBehaviorStore.touchEvents.length > 0) {
       mobileBehaviorStore.endTime = Date.now();
-      allData.push({...mobileBehaviorStore});
+      allData.push({ ...mobileBehaviorStore });
     }
 
-    const jsonData = JSON.stringify(allData, null, 2);
-    const blob = new Blob([jsonData], { type: 'application/json' });
+    // 데이터를 JSON 파일로 변환
+    const jsonContent = JSON.stringify(allData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mobile_behavior_${Date.now()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+    // 다운로드 링크 생성 및 클릭 (모바일/PC 모두 동작)
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mobile_behavior_data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // 일정 시간 후 URL 해제
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000); // 1분 후 해제
   } catch (error) {
     console.error('모바일 데이터 다운로드 중 오류:', error);
   }

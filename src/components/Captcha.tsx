@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
-import WarmFeelingCaptcha from './WarmFeelingCaptcha';
+import AbstractCaptcha from './AbstractCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
 import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
 import { detectDevice } from '../utils/deviceDetector';
@@ -18,7 +18,7 @@ interface BehaviorData {
   };
 }
 
-type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'warm-feeling-captcha' | 'handwriting-captcha';
+type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'abstract-captcha' | 'handwriting-captcha';
 
 // 세션 시퀀스 관리를 위한 로컬 스토리지 키
 const SESSION_SEQUENCE_KEY = 'captcha_session_sequence';
@@ -103,7 +103,7 @@ const Captcha: React.FC = () => {
 
   // 상태 변경시 자동 저장 중지 및 데이터 다운로드
   useEffect(() => {
-    if (state === 'image-captcha' || state === 'warm-feeling-captcha' || state === 'handwriting-captcha') {
+    if (state === 'image-captcha' || state === 'abstract-captcha' || state === 'handwriting-captcha') {
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
         autoSaveIntervalRef.current = null;
@@ -209,7 +209,7 @@ const Captcha: React.FC = () => {
             if (newCount % 3 === 0) {
               setState('image-captcha');
             } else if (newCount % 3 === 1) {
-              setState('warm-feeling-captcha');
+              setState('abstract-captcha');
             } else {
               setState('handwriting-captcha');
             }
@@ -223,8 +223,30 @@ const Captcha: React.FC = () => {
     }
   };
 
+  // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
+  const handleBehaviorAnalysis = async () => {
+    const response = await fetch('http://localhost:8000/api/next-captcha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송
+    });
+    const data = await response.json();
+
+    // 결과에 따라 다음 캡차로 이동
+    if (data.next_captcha === 'imagecaptcha') {
+      setState('handwriting-captcha');
+    } else if (data.next_captcha === 'handwritingcaptcha') {
+      setState('handwriting-captcha');
+    } else if (data.next_captcha === 'abstractcaptcha') {
+      setState('handwriting-captcha');
+    } else {
+      setState('success'); // 추가 캡차 없이 통과
+    }
+  };
+
+  // 사용자가 기본 캡차를 통과했을 때 호출
   const handleCaptchaSuccess = () => {
-    setState('initial');
+    handleBehaviorAnalysis();
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -247,8 +269,8 @@ const Captcha: React.FC = () => {
     <div className="captcha-container">
       {state === 'image-captcha' ? (
         <ImageCaptcha onSuccess={handleCaptchaSuccess} />
-      ) : state === 'warm-feeling-captcha' ? (
-        <WarmFeelingCaptcha onSuccess={handleCaptchaSuccess} />
+      ) : state === 'abstract-captcha' ? (
+        <AbstractCaptcha onSuccess={handleCaptchaSuccess} />
       ) : state === 'handwriting-captcha' ? (
         <HandwritingCaptcha onSuccess={handleCaptchaSuccess} />
       ) : (
