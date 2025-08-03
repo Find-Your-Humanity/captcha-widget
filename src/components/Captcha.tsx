@@ -204,17 +204,7 @@ const Captcha: React.FC = () => {
       setTimeout(() => {
         setState('success');
         setTimeout(() => {
-          setCaptchaCount(prev => {
-            const newCount = prev + 1;
-            if (newCount % 3 === 0) {
-              setState('image-captcha');
-            } else if (newCount % 3 === 1) {
-              setState('abstract-captcha');
-            } else {
-              setState('handwriting-captcha');
-            }
-            return newCount;
-          });
+          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출
         }, 1000);
       }, 2000);
     } else if (state === 'error') {
@@ -225,22 +215,33 @@ const Captcha: React.FC = () => {
 
   // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
   const handleBehaviorAnalysis = async () => {
-    const response = await fetch('http://localhost:8000/api/next-captcha', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch('http://localhost:8000/api/next-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송
+      });
 
-    // 결과에 따라 다음 캡차로 이동
-    if (data.next_captcha === 'imagecaptcha') {
-      setState('handwriting-captcha');
-    } else if (data.next_captcha === 'handwritingcaptcha') {
-      setState('handwriting-captcha');
-    } else if (data.next_captcha === 'abstractcaptcha') {
-      setState('handwriting-captcha');
-    } else {
-      setState('success'); // 추가 캡차 없이 통과
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // 결과에 따라 다음 캡차로 이동
+      if (data.next_captcha === 'imagecaptcha') {
+        setState('image-captcha');
+      } else if (data.next_captcha === 'handwritingcaptcha') {
+        setState('handwriting-captcha');
+      } else if (data.next_captcha === 'abstractcaptcha') {
+        setState('abstract-captcha');
+      } else {
+        setState('success'); // 추가 캡차 없이 통과
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setState('error');
+      setErrorMessage('서버 연결에 실패했습니다. 다시 시도해주세요.');
     }
   };
 

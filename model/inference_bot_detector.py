@@ -23,9 +23,14 @@ class AutoEncoder(torch.nn.Module):
     def forward(self, x):
         return self.decoder(self.encoder(x))
 
-def extract_features_from_json(path):
-    with open(path, "r") as f:
-        data = json.load(f)[0]
+def extract_features_from_json(data):
+    # data가 문자열 또는 파일 경로인 경우 처리
+    if isinstance(data, str):
+        with open(data, "r") as f:
+            data = json.load(f)[0]
+    # data가 dict인 경우 바로 처리
+    elif isinstance(data, dict):
+        data = data
 
     mouse = pd.DataFrame(data.get("mouseMovements", []))
     clicks = pd.DataFrame(data.get("mouseClicks", []))
@@ -70,18 +75,27 @@ def extract_features_from_json(path):
 
     return summary
 
-def detect_bot(json_path):
-    feat = extract_features_from_json(json_path)
+def detect_bot(data):
+    feat = extract_features_from_json(data)
+    if feat is None:
+        return {
+            "score": 0,
+            "mse": 1.0,
+            "threshold": 0.5,
+            "is_bot": True,
+            "features": {}
+        }
+        
     df = pd.DataFrame([feat])
-    scaler = joblib.load("scaler.pkl")
+    scaler = joblib.load("../model/scaler.pkl")
     scaled = scaler.transform(df)
     x = torch.tensor(scaled, dtype=torch.float32)
 
     model = AutoEncoder(input_dim=x.shape[1])
-    model.load_state_dict(torch.load("model.pth"))
+    model.load_state_dict(torch.load("../model/model.pth"))
     model.eval()
 
-    with open("threshold.txt", "r") as f:
+    with open("../model/threshold.txt", "r") as f:
         threshold = float(f.read())
 
     with torch.no_grad():
@@ -104,5 +118,5 @@ def detect_bot(json_path):
     }
 
 if __name__ == "__main__":
-    result = detect_bot("/Users/kang-yeongmo/userdata/bot_sim_001.json")
+    result = detect_bot("model/data/behavior_data_20250731_105033.json")
     print(json.dumps(result, indent=2, ensure_ascii=False))
