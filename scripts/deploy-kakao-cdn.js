@@ -21,8 +21,8 @@ class KakaoCDNDeployer {
       region: process.env.KAKAO_REGION || 'kr-central-2',
       accessKey: process.env.KAKAO_ACCESS_KEY,
       secretKey: process.env.KAKAO_SECRET_KEY,
-      bucket: process.env.KAKAO_CDN_BUCKET || 'realcaptcha-cdn',
-      projectId: process.env.KAKAO_PROJECT_ID || '1bb3cb9eb13b43928008938a2a21d80',
+      bucket: process.env.KAKAO_CDN_BUCKET || 'realcatcha-cdn',
+      projectId: process.env.KAKAO_PROJECT_ID || '1bb3c9ceb1db43928600b93b2a2b1d50',
       endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaocloud.com',
       cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaocloud.com',
       cdnDomain: process.env.KAKAO_CDN_DOMAIN || 'cdn.realcaptcha.com'

@@ -48,7 +48,7 @@ jobs:
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
-                  KAKAO_CDN_BUCKET: realcaptcha-cdn
+                  KAKAO_CDN_BUCKET: realcatcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
                   REACT_APP_VERSION: dev
               run: npm run deploy:kakao
@@ -60,7 +60,7 @@ jobs:
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
-                  KAKAO_CDN_BUCKET: realcaptcha-cdn-staging
+                  KAKAO_CDN_BUCKET: realcatcha-cdn-staging
                   KAKAO_CDN_DOMAIN: ${{ vars.STAGING_KAKAO_DOMAIN }}
                   REACT_APP_VERSION: staging
               run: npm run deploy:kakao
@@ -72,7 +72,7 @@ jobs:
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
-                  KAKAO_CDN_BUCKET: realcaptcha-cdn
+                  KAKAO_CDN_BUCKET: realcatcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
                   REACT_APP_VERSION: ${{ github.ref_name }}
               run: npm run deploy:kakao
