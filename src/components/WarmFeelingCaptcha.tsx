@@ -16,17 +16,17 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
 
-  // 9장의 개별 이미지 (2~10.jpg 파일들)
+  // 9장의 테스트 이미지 (플레이스홀더)
   const images: ImageItem[] = [
-    { id: 1, src: '/2.jpg', hasWarmFeeling: true, selected: false },
-    { id: 2, src: '/3.jpg', hasWarmFeeling: true, selected: false },
-    { id: 3, src: '/4.jpg', hasWarmFeeling: true, selected: false },
-    { id: 4, src: '/5.jpg', hasWarmFeeling: false, selected: false },
-    { id: 5, src: '/6.jpg', hasWarmFeeling: false, selected: false },
-    { id: 6, src: '/7.jpg', hasWarmFeeling: false, selected: false },
-    { id: 7, src: '/8.jpg', hasWarmFeeling: true, selected: false },
-    { id: 8, src: '/9.jpg', hasWarmFeeling: false, selected: false },
-    { id: 9, src: '/10.jpg', hasWarmFeeling: true, selected: false },
+    { id: 1, src: 'https://picsum.photos/150/150?random=1', hasWarmFeeling: true, selected: false },
+    { id: 2, src: 'https://picsum.photos/150/150?random=2', hasWarmFeeling: true, selected: false },
+    { id: 3, src: 'https://picsum.photos/150/150?random=3', hasWarmFeeling: true, selected: false },
+    { id: 4, src: 'https://picsum.photos/150/150?random=4', hasWarmFeeling: false, selected: false },
+    { id: 5, src: 'https://picsum.photos/150/150?random=5', hasWarmFeeling: false, selected: false },
+    { id: 6, src: 'https://picsum.photos/150/150?random=6', hasWarmFeeling: false, selected: false },
+    { id: 7, src: 'https://picsum.photos/150/150?random=7', hasWarmFeeling: true, selected: false },
+    { id: 8, src: 'https://picsum.photos/150/150?random=8', hasWarmFeeling: false, selected: false },
+    { id: 9, src: 'https://picsum.photos/150/150?random=9', hasWarmFeeling: true, selected: false },
   ];
 
   const handleImageClick = (imageId: number) => {

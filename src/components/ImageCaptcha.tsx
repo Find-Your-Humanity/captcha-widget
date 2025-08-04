@@ -116,7 +116,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
             <div 
               className="image-placeholder"
               style={{
-                backgroundImage: 'url(/1.jpg)',
+                backgroundImage: 'url(https://picsum.photos/450/450?random=bike)',
                 backgroundPosition: `${(image.gridPosition.col - 1) * 33.33}% ${(image.gridPosition.row - 1) * 33.33}%`,
                 backgroundSize: '300% 300%'
               }}

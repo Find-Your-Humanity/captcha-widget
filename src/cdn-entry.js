@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Captcha from './components/Captcha';
+import Captcha from './components/Captcha.tsx';
 
 // CDN 전용 엔트리 포인트
 class RealCaptcha {
