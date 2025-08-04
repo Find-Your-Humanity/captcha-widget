@@ -5,15 +5,15 @@
 CDN_PROVIDER=kakao
 
 # 카카오클라우드 인증 정보
-KAKAO_ACCESS_KEY=ec572f9ea3e74da6b5f733bd34ed93db
-KAKAO_SECRET_KEY=218157c40df8aa021657c4ec2044391f863f31318b7ec691ef34ffab74634a1db1d8cd
+KAKAO_ACCESS_KEY=YOUR_KAKAO_ACCESS_KEY
+KAKAO_SECRET_KEY=YOUR_KAKAO_SECRET_KEY
 
 # 카카오클라우드 리전
-KAKAO_REGION=kr-central-1
+KAKAO_REGION=kr-central-2
 
 # Object Storage 설정
 KAKAO_CDN_BUCKET=realcaptcha-cdn
-KAKAO_STORAGE_ENDPOINT=https://objectstorage.kr-central-1.kakaoi.io
+KAKAO_STORAGE_ENDPOINT=https://objectstorage.kr-central-2.kakaoi.io
 
 # CDN 설정 (실제 생성된 도메인)
 KAKAO_CDN_ENDPOINT=https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com

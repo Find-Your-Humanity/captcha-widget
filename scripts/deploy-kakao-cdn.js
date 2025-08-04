@@ -18,12 +18,12 @@ class KakaoCDNDeployer {
     
     // 카카오클라우드 설정
     this.config = {
-      region: process.env.KAKAO_REGION || 'kr-central-1',
+      region: process.env.KAKAO_REGION || 'kr-central-2',
       accessKey: process.env.KAKAO_ACCESS_KEY,
       secretKey: process.env.KAKAO_SECRET_KEY,
       bucket: process.env.KAKAO_CDN_BUCKET || 'realcaptcha-cdn',
-      endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-1.kakaoi.io',
-      cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-1.kakaoi.io',
+      endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaoi.io',
+      cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaoi.io',
       cdnDomain: process.env.KAKAO_CDN_DOMAIN || 'cdn.realcaptcha.com'
     };
     
@@ -76,8 +76,12 @@ class KakaoCDNDeployer {
     console.log(`🔗 Storage 엔드포인트: ${this.config.endpoint}`);
     
     try {
-      // 네트워크 연결 테스트
-      await this.testNetworkConnection();
+      // 네트워크 연결 테스트 (실패해도 계속 진행)
+      try {
+        await this.testNetworkConnection();
+      } catch (error) {
+        console.log(`⚠️ 네트워크 연결 테스트 실패, 하지만 배포를 계속 진행합니다: ${error.message}`);
+      }
       
       // 빌드 파일 존재 확인
       await this.validateBuildFiles();
@@ -140,7 +144,7 @@ class KakaoCDNDeployer {
 
   async uploadFile(content, key, filename, retryCount = 0) {
     const maxRetries = 3;
-    const timeout = 30000; // 30초 타임아웃
+    const timeout = 60000; // 60초 타임아웃 (GitHub Actions 환경 고려)
     
     console.log(`📤 업로드 시도 ${retryCount + 1}/${maxRetries + 1}: ${key}`);
     
@@ -197,17 +201,21 @@ class KakaoCDNDeployer {
       
       req.on('error', (error) => {
         console.log(`🚨 네트워크 오류: ${error.message}`);
+        console.log(`📍 오류 코드: ${error.code}`);
+        console.log(`📍 연결 주소: ${url.href}`);
+        console.log(`📍 시스템 오류: ${error.syscall || 'N/A'}`);
         
         // 재시도 로직
         if (retryCount < maxRetries) {
           const delay = Math.pow(2, retryCount) * 1000; // 지수 백오프
-          console.log(`🔄 ${delay}ms 후 재시도...`);
+          console.log(`🔄 ${delay}ms 후 재시도... (${retryCount + 1}/${maxRetries})`);
           setTimeout(() => {
             this.uploadFile(content, key, filename, retryCount + 1)
               .then(resolve)
               .catch(reject);
           }, delay);
         } else {
+          console.log(`❌ 최대 재시도 횟수 초과. 포기합니다.`);
           reject(error);
         }
       });
