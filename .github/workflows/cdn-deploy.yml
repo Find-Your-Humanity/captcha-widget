@@ -2,7 +2,7 @@ name: CDN Deploy
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, dev-cdn ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
