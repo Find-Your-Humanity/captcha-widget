@@ -32,6 +32,10 @@ def train(csv_path):
     drop_cols = ['user_id', 'session_id', 'label'] if 'label' in df.columns else ['user_id', 'session_id']
     df = df.drop(columns=drop_cols, errors='ignore')
 
+    # 컬럼 순서 저장
+    feature_columns = df.columns.tolist()
+    joblib.dump(feature_columns, "feature_columns.pkl")
+
     scaler = MinMaxScaler()
     scaled = scaler.fit_transform(df)
     joblib.dump(scaler, "scaler.pkl")
