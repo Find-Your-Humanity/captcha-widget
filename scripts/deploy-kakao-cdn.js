@@ -105,10 +105,7 @@ class KakaoCDNDeployer {
 
   async validateBuildFiles() {
     const requiredFiles = [
-      'realcaptcha-widget.min.js',
-      'metadata.json',
-      'hashes.json',
-      'example.html'
+      'realcaptcha-widget.min.js'
     ];
 
     for (const file of requiredFiles) {
@@ -127,15 +124,17 @@ class KakaoCDNDeployer {
     const files = await fs.readdir(this.cdnDir);
     
     for (const file of files) {
-      const filePath = path.join(this.cdnDir, file);
-      const fileContent = await fs.readFile(filePath);
-      
-      // 버전별 업로드
-      await this.uploadFile(fileContent, `v${this.version}/${file}`, file);
-      
-      // latest 버전도 업로드 (JS 파일만)
+      // realcaptcha-widget.min.js 파일만 업로드
       if (file === 'realcaptcha-widget.min.js') {
+        const filePath = path.join(this.cdnDir, file);
+        const fileContent = await fs.readFile(filePath);
+        
+        // latest 폴더에만 업로드
         await this.uploadFile(fileContent, `latest/${file}`, file);
+        
+        console.log(`✅ ${file} 업로드 완료`);
+      } else {
+        console.log(`⏭️ ${file} 건너뛰기 (필요하지 않은 파일)`);
       }
     }
 
@@ -251,8 +250,7 @@ class KakaoCDNDeployer {
     try {
       // 카카오클라우드 CDN API를 통한 캐시 무효화
       const invalidationPaths = [
-        `/v${this.version}/*`,
-        '/latest/*'
+        '/latest/realcaptcha-widget.min.js'
       ];
       
       // TODO: 카카오클라우드 CDN API 연동

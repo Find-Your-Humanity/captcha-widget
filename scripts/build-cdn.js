@@ -26,14 +26,15 @@ class CDNBuilder {
         cwd: path.join(__dirname, '../')
       });
       
-      // React, ReactDOM CDN 링크를 포함한 HTML 예제 생성
-      await this.generateExampleHTML();
+      console.log('📄 realcaptcha-widget.min.js 생성 완료');
       
-      // 버전 정보와 함께 메타데이터 생성
-      await this.generateMetadata();
-      
-      // 무결성 검사를 위한 해시 생성
-      await this.generateHashes();
+      // 선택적: 개발용 파일들 생성 (CDN 배포에는 불필요)
+      if (process.env.GENERATE_DEV_FILES === 'true') {
+        console.log('📝 개발용 파일들 생성 중...');
+        await this.generateExampleHTML();
+        await this.generateMetadata();
+        await this.generateHashes();
+      }
       
       console.log('✅ CDN 빌드 완료!');
       console.log(`📁 출력 디렉토리: ${this.cdnDir}`);
