@@ -22,8 +22,9 @@ class KakaoCDNDeployer {
       accessKey: process.env.KAKAO_ACCESS_KEY,
       secretKey: process.env.KAKAO_SECRET_KEY,
       bucket: process.env.KAKAO_CDN_BUCKET || 'realcaptcha-cdn',
-      endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaoi.io',
-      cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaoi.io',
+      projectId: process.env.KAKAO_PROJECT_ID || '1bb3cb9eb13b43928008938a2a21d80',
+      endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaocloud.com',
+      cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaocloud.com',
       cdnDomain: process.env.KAKAO_CDN_DOMAIN || 'cdn.realcaptcha.com'
     };
     
@@ -163,7 +164,7 @@ class KakaoCDNDeployer {
       }
     };
 
-    const url = new URL(key, `${this.config.endpoint}/${this.config.bucket}/`);
+    const url = new URL(`/v1/${this.config.projectId}/${this.config.bucket}/${key}`, this.config.endpoint);
     console.log(`🌐 업로드 URL: ${url.href}`);
     
     return new Promise((resolve, reject) => {
@@ -226,7 +227,7 @@ class KakaoCDNDeployer {
 
   getAuthHeader(method, key, contentType, contentMD5) {
     const date = new Date().toUTCString();
-    const resource = `/${this.config.bucket}/${key}`;
+    const resource = `/v1/${this.config.projectId}/${this.config.bucket}/${key}`;
     
     const stringToSign = [
       method,

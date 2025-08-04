@@ -12,8 +12,9 @@ KAKAO_SECRET_KEY=YOUR_KAKAO_SECRET_KEY
 KAKAO_REGION=kr-central-2
 
 # Object Storage 설정
+KAKAO_PROJECT_ID=1bb3cb9eb13b43928008938a2a21d80
 KAKAO_CDN_BUCKET=realcaptcha-cdn
-KAKAO_STORAGE_ENDPOINT=https://objectstorage.kr-central-2.kakaoi.io
+KAKAO_STORAGE_ENDPOINT=https://objectstorage.kr-central-2.kakaocloud.com
 
 # CDN 설정 (실제 생성된 도메인)
 KAKAO_CDN_ENDPOINT=https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com

@@ -38,6 +38,7 @@ jobs:
               env:
                   KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
+                  KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
 
             - name: Deploy to CDN (dev-cdn 브랜치)
@@ -45,6 +46,7 @@ jobs:
               env:
                   KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
+                  KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
                   KAKAO_CDN_BUCKET: realcaptcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
@@ -56,6 +58,7 @@ jobs:
               env:
                   KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
+                  KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
                   KAKAO_CDN_BUCKET: realcaptcha-cdn-staging
                   KAKAO_CDN_DOMAIN: ${{ vars.STAGING_KAKAO_DOMAIN }}
@@ -67,6 +70,7 @@ jobs:
               env:
                   KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
+                  KAKAO_PROJECT_ID: ${{ secrets.PROJECT_NAME }}
                   KAKAO_REGION: kr-central-2
                   KAKAO_CDN_BUCKET: realcaptcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
