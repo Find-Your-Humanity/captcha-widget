@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
+const aws4 = require('aws4');
 const { URL } = require('url');
 require('dotenv').config();
 
@@ -64,9 +65,17 @@ class KakaoCDNDeployer {
   validateConfig() {
     const required = ['accessKey', 'secretKey', 'bucket'];
     const missing = required.filter(key => !this.config[key]);
-    
+
     if (missing.length > 0) {
       throw new Error(`카카오클라우드 설정이 누락되었습니다: ${missing.join(', ')}`);
+    }
+
+    // 리전·엔드포인트 일관성 확인
+    if (this.config.region !== 'kr-central-2') {
+      throw new Error(`지원되지 않는 리전입니다: ${this.config.region}. kr-central-2만 사용하세요.`);
+    }
+    if (!this.config.endpoint.includes('kr-central-2')) {
+      throw new Error(`엔드포인트(${this.config.endpoint}) 가 kr-central-2 리전용이 아닙니다.`);
     }
   }
 
@@ -149,22 +158,30 @@ class KakaoCDNDeployer {
     console.log(`📤 업로드 시도 ${retryCount + 1}/${maxRetries + 1}: ${key}`);
     
     const contentType = this.getContentType(filename);
-    const contentMD5 = crypto.createHash('md5').update(content).digest('base64');
-    const date = new Date().toUTCString();
-    
-    const options = {
+    const path = `/v1/${this.config.projectId}/${this.config.bucket}/${key}`;
+    const url = new URL(path, this.config.endpoint);
+
+    let options = {
+      host: url.host,
+      path: url.pathname,
+      service: 's3',
+      region: this.config.region, // kr-central-2
       method: 'PUT',
-      timeout: timeout,
       headers: {
         'Content-Type': contentType,
-        'Content-Length': content.length,
-        'Content-MD5': contentMD5,
-        'Date': date,
-        'Authorization': this.getAuthHeader('PUT', key, contentType, contentMD5, date)
-      }
+        'Content-Length': content.length
+      },
+      body: content
     };
 
-    const url = new URL(`/v1/${this.config.projectId}/${this.config.bucket}/${key}`, this.config.endpoint);
+    // AWS Signature V4 서명 적용
+    options = aws4.sign(options, {
+      accessKeyId: this.config.accessKey,
+      secretAccessKey: this.config.secretKey
+    });
+
+    // 요청 타임아웃 설정
+    options.timeout = timeout;
     console.log(`🌐 업로드 URL: ${url.href}`);
     console.log(`📋 요청 헤더: ${JSON.stringify(options.headers, null, 2)}`);
     
@@ -245,36 +262,7 @@ class KakaoCDNDeployer {
     });
   }
 
-  getAuthHeader(method, key, contentType, contentMD5, date) {
-    // 카카오클라우드 Object Storage의 리소스 경로는 버킷/키만 포함
-    const resource = `/v1/${this.config.projectId}/${this.config.bucket}/${key}`;
-    
-    const stringToSign = [
-      method,
-      contentMD5,
-      contentType,
-      date,
-      resource
-    ].join('\n');
-    
-    console.log('🔐 Authorization 디버깅:');
-    console.log(`  Method: ${method}`);
-    console.log(`  Content-MD5: ${contentMD5}`);
-    console.log(`  Content-Type: ${contentType}`);
-    console.log(`  Date: ${date}`);
-    console.log(`  Resource: ${resource}`);
-    console.log(`  String to Sign: ${JSON.stringify(stringToSign)}`);
-    
-    const signature = crypto
-      .createHmac('sha1', this.config.secretKey)
-      .update(stringToSign)
-      .digest('base64');
-    
-    const authHeader = `AWS ${this.config.accessKey}:${signature}`;
-    console.log(`  Authorization: ${authHeader}`);
-    
-    return authHeader;
-  }
+
 
   async invalidateCDN() {
     console.log('🔄 카카오클라우드 CDN 캐시 무효화...');
