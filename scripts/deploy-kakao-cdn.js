@@ -149,34 +149,49 @@ class KakaoCDNDeployer {
     console.log(`📤 업로드 시도 ${retryCount + 1}/${maxRetries + 1}: ${key}`);
     
     const contentType = this.getContentType(filename);
-    const contentMD5 = crypto.createHash('md5').update(content).digest('base64');
+    const contentMD5 = ''; // Content-MD5 제거 시도
+    const date = new Date().toUTCString();
     
     const options = {
       method: 'PUT',
       timeout: timeout,
       headers: {
+        'Host': new URL(this.config.endpoint).host,
         'Content-Type': contentType,
         'Content-Length': content.length,
-        'Content-MD5': contentMD5,
+        'Date': date,
         'Cache-Control': this.getCacheControl(filename),
         'x-amz-acl': 'public-read',
-        'Authorization': this.getAuthHeader('PUT', key, contentType, contentMD5)
+        'Authorization': this.getAuthHeader('PUT', key, contentType, contentMD5, date)
       }
     };
 
     const url = new URL(`/v1/${this.config.projectId}/${this.config.bucket}/${key}`, this.config.endpoint);
     console.log(`🌐 업로드 URL: ${url.href}`);
+    console.log(`📋 요청 헤더: ${JSON.stringify(options.headers, null, 2)}`);
     
     return new Promise((resolve, reject) => {
       const req = https.request(url, options, (res) => {
-        if (res.statusCode === 200 || res.statusCode === 201) {
-          console.log(`✅ 업로드 완료: ${key}`);
-          resolve();
-        } else {
-          const error = new Error(`업로드 실패 ${key}: ${res.statusCode} ${res.statusMessage}`);
-          console.log(`❌ HTTP 오류: ${error.message}`);
-          reject(error);
-        }
+        let responseBody = '';
+        
+        res.on('data', (chunk) => {
+          responseBody += chunk;
+        });
+        
+        res.on('end', () => {
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            console.log(`✅ 업로드 완료: ${key}`);
+            resolve();
+          } else {
+            console.log(`❌ HTTP 응답 상세 정보:`);
+            console.log(`  Status: ${res.statusCode} ${res.statusMessage}`);
+            console.log(`  Headers: ${JSON.stringify(res.headers, null, 2)}`);
+            console.log(`  Body: ${responseBody}`);
+            
+            const error = new Error(`업로드 실패 ${key}: ${res.statusCode} ${res.statusMessage}`);
+            reject(error);
+          }
+        });
       });
       
       // 타임아웃 설정
@@ -225,9 +240,9 @@ class KakaoCDNDeployer {
     });
   }
 
-  getAuthHeader(method, key, contentType, contentMD5) {
-    const date = new Date().toUTCString();
-    const resource = `/v1/${this.config.projectId}/${this.config.bucket}/${key}`;
+  getAuthHeader(method, key, contentType, contentMD5, date) {
+    // 카카오클라우드 Object Storage의 리소스 경로는 버킷/키만 포함
+    const resource = `/${this.config.bucket}/${key}`;
     
     const stringToSign = [
       method,
@@ -237,12 +252,23 @@ class KakaoCDNDeployer {
       resource
     ].join('\n');
     
+    console.log('🔐 Authorization 디버깅:');
+    console.log(`  Method: ${method}`);
+    console.log(`  Content-MD5: ${contentMD5}`);
+    console.log(`  Content-Type: ${contentType}`);
+    console.log(`  Date: ${date}`);
+    console.log(`  Resource: ${resource}`);
+    console.log(`  String to Sign: ${JSON.stringify(stringToSign)}`);
+    
     const signature = crypto
       .createHmac('sha1', this.config.secretKey)
       .update(stringToSign)
       .digest('base64');
     
-    return `AWS ${this.config.accessKey}:${signature}`;
+    const authHeader = `AWS ${this.config.accessKey}:${signature}`;
+    console.log(`  Authorization: ${authHeader}`);
+    
+    return authHeader;
   }
 
   async invalidateCDN() {
