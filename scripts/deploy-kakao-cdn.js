@@ -149,19 +149,17 @@ class KakaoCDNDeployer {
     console.log(`📤 업로드 시도 ${retryCount + 1}/${maxRetries + 1}: ${key}`);
     
     const contentType = this.getContentType(filename);
-    const contentMD5 = ''; // Content-MD5 제거 시도
+    const contentMD5 = crypto.createHash('md5').update(content).digest('base64');
     const date = new Date().toUTCString();
     
     const options = {
       method: 'PUT',
       timeout: timeout,
       headers: {
-        'Host': new URL(this.config.endpoint).host,
         'Content-Type': contentType,
         'Content-Length': content.length,
+        'Content-MD5': contentMD5,
         'Date': date,
-        'Cache-Control': this.getCacheControl(filename),
-        'x-amz-acl': 'public-read',
         'Authorization': this.getAuthHeader('PUT', key, contentType, contentMD5, date)
       }
     };
@@ -169,6 +167,13 @@ class KakaoCDNDeployer {
     const url = new URL(`/v1/${this.config.projectId}/${this.config.bucket}/${key}`, this.config.endpoint);
     console.log(`🌐 업로드 URL: ${url.href}`);
     console.log(`📋 요청 헤더: ${JSON.stringify(options.headers, null, 2)}`);
+    
+    // curl 명령어 생성 (디버깅용)
+    const curlHeaders = Object.entries(options.headers)
+      .map(([key, value]) => `-H "${key}: ${value}"`)
+      .join(' ');
+    const curlCommand = `curl -X PUT ${curlHeaders} --data-binary @dist-cdn/realcaptcha-widget.min.js "${url.href}"`;
+    console.log(`🔧 테스트용 curl 명령어:\n${curlCommand}`);
     
     return new Promise((resolve, reject) => {
       const req = https.request(url, options, (res) => {
