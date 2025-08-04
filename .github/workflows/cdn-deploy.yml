@@ -32,19 +32,19 @@ jobs:
               if: github.ref == 'refs/heads/dev-cdn'
               run: |
                 echo "🔍 환경변수 확인 중..."
-                echo "KAKAO_ACCESS_KEY 존재: $([[ -n "$KAKAO_ACCESS_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
-                echo "KAKAO_SECRET_KEY 존재: $([[ -n "$KAKAO_SECRET_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
+                echo "KAKAO_ACCESS_KEY (ACCESS_KEY) 존재: $([[ -n "$KAKAO_ACCESS_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
+                echo "KAKAO_SECRET_KEY (ACCESS_SECRET_KEY) 존재: $([[ -n "$KAKAO_SECRET_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
                 echo "KAKAO_REGION: $KAKAO_REGION"
               env:
-                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_REGION: kr-central-1
 
             - name: Deploy to CDN (dev-cdn 브랜치)
               if: github.ref == 'refs/heads/dev-cdn'
               env:
-                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_REGION: kr-central-1
                   KAKAO_CDN_BUCKET: realcaptcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
@@ -54,8 +54,8 @@ jobs:
             - name: Deploy to CDN (develop 브랜치 - 스테이징)
               if: github.ref == 'refs/heads/develop'
               env:
-                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_REGION: kr-central-1
                   KAKAO_CDN_BUCKET: realcaptcha-cdn-staging
                   KAKAO_CDN_DOMAIN: ${{ vars.STAGING_KAKAO_DOMAIN }}
@@ -65,8 +65,8 @@ jobs:
             - name: Deploy to CDN (main/태그 - 프로덕션)  
               if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
               env:
-                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
                   KAKAO_REGION: kr-central-1
                   KAKAO_CDN_BUCKET: realcaptcha-cdn
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
