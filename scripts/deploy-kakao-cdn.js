@@ -247,7 +247,7 @@ class KakaoCDNDeployer {
 
   getAuthHeader(method, key, contentType, contentMD5, date) {
     // 카카오클라우드 Object Storage의 리소스 경로는 버킷/키만 포함
-    const resource = `/${this.config.bucket}/${key}`;
+    const resource = `/v1/${this.config.projectId}/${this.config.bucket}/${key}`;
     
     const stringToSign = [
       method,
