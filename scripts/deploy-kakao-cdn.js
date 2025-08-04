@@ -30,6 +30,36 @@ class KakaoCDNDeployer {
     this.validateConfig();
   }
 
+  async testNetworkConnection() {
+    console.log('🔍 카카오클라우드 네트워크 연결 테스트...');
+    
+    const url = new URL(this.config.endpoint);
+    const options = {
+      method: 'HEAD',
+      timeout: 10000
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(url, options, (res) => {
+        console.log(`✅ 네트워크 연결 성공: ${res.statusCode}`);
+        resolve();
+      });
+      
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject(new Error('네트워크 연결 테스트 타임아웃 (10초)'));
+      });
+      
+      req.on('error', (error) => {
+        console.log(`❌ 네트워크 연결 실패: ${error.message}`);
+        console.log(`📍 연결 시도 주소: ${url.href}`);
+        reject(error);
+      });
+      
+      req.end();
+    });
+  }
+
   validateConfig() {
     const required = ['accessKey', 'secretKey', 'bucket'];
     const missing = required.filter(key => !this.config[key]);
@@ -43,8 +73,12 @@ class KakaoCDNDeployer {
     console.log('🌟 카카오클라우드 CDN 배포 시작...');
     console.log(`📦 버킷: ${this.config.bucket}`);
     console.log(`🌐 CDN 도메인: ${this.config.cdnDomain}`);
+    console.log(`🔗 Storage 엔드포인트: ${this.config.endpoint}`);
     
     try {
+      // 네트워크 연결 테스트
+      await this.testNetworkConnection();
+      
       // 빌드 파일 존재 확인
       await this.validateBuildFiles();
       
@@ -104,12 +138,18 @@ class KakaoCDNDeployer {
     console.log('✅ Object Storage 업로드 완료');
   }
 
-  async uploadFile(content, key, filename) {
+  async uploadFile(content, key, filename, retryCount = 0) {
+    const maxRetries = 3;
+    const timeout = 30000; // 30초 타임아웃
+    
+    console.log(`📤 업로드 시도 ${retryCount + 1}/${maxRetries + 1}: ${key}`);
+    
     const contentType = this.getContentType(filename);
     const contentMD5 = crypto.createHash('md5').update(content).digest('base64');
     
     const options = {
       method: 'PUT',
+      timeout: timeout,
       headers: {
         'Content-Type': contentType,
         'Content-Length': content.length,
@@ -121,18 +161,57 @@ class KakaoCDNDeployer {
     };
 
     const url = new URL(key, `${this.config.endpoint}/${this.config.bucket}/`);
+    console.log(`🌐 업로드 URL: ${url.href}`);
     
     return new Promise((resolve, reject) => {
       const req = https.request(url, options, (res) => {
         if (res.statusCode === 200 || res.statusCode === 201) {
-          console.log(`📝 업로드 완료: ${key}`);
+          console.log(`✅ 업로드 완료: ${key}`);
           resolve();
         } else {
-          reject(new Error(`업로드 실패 ${key}: ${res.statusCode} ${res.statusMessage}`));
+          const error = new Error(`업로드 실패 ${key}: ${res.statusCode} ${res.statusMessage}`);
+          console.log(`❌ HTTP 오류: ${error.message}`);
+          reject(error);
         }
       });
       
-      req.on('error', reject);
+      // 타임아웃 설정
+      req.setTimeout(timeout, () => {
+        req.destroy();
+        const error = new Error(`업로드 타임아웃 (${timeout}ms): ${key}`);
+        console.log(`⏰ 타임아웃: ${error.message}`);
+        
+        // 재시도 로직
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000; // 지수 백오프
+          console.log(`🔄 ${delay}ms 후 재시도...`);
+          setTimeout(() => {
+            this.uploadFile(content, key, filename, retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, delay);
+        } else {
+          reject(error);
+        }
+      });
+      
+      req.on('error', (error) => {
+        console.log(`🚨 네트워크 오류: ${error.message}`);
+        
+        // 재시도 로직
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000; // 지수 백오프
+          console.log(`🔄 ${delay}ms 후 재시도...`);
+          setTimeout(() => {
+            this.uploadFile(content, key, filename, retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, delay);
+        } else {
+          reject(error);
+        }
+      });
+      
       req.write(content);
       req.end();
     });
