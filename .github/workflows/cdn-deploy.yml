@@ -28,6 +28,18 @@ jobs:
             - name: Build for CDN
               run: npm run build:cdn
 
+            - name: Debug Environment Variables (dev-cdn 브랜치)
+              if: github.ref == 'refs/heads/dev-cdn'
+              run: |
+                echo "🔍 환경변수 확인 중..."
+                echo "KAKAO_ACCESS_KEY 존재: $([[ -n "$KAKAO_ACCESS_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
+                echo "KAKAO_SECRET_KEY 존재: $([[ -n "$KAKAO_SECRET_KEY" ]] && echo "✅ 설정됨" || echo "❌ 누락")"
+                echo "KAKAO_REGION: $KAKAO_REGION"
+              env:
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_REGION: kr-central-1
+
             - name: Deploy to CDN (dev-cdn 브랜치)
               if: github.ref == 'refs/heads/dev-cdn'
               env:
