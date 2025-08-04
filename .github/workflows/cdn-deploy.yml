@@ -1,171 +1,62 @@
 name: CDN Deploy
 
 on:
-  push:
-    branches: [ main, develop, dev-cdn ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
-
-env:
-  NODE_VERSION: '18'
+    push:
+        branches:
+            - main
+            - develop  
+            - dev-cdn
+        tags:
+            - 'v*'
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      
-    - name: Run tests
-      run: npm test -- --coverage --watchAll=false
-      
-    - name: Build for CDN
-      run: npm run build:cdn
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: cdn-build
-        path: dist-cdn/
-        retention-days: 30
+    build-and-deploy-cdn:
+        runs-on: ubuntu-latest
 
-  deploy-staging:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: cdn-build
-        path: dist-cdn/
-        
-    - name: Deploy to Staging CDN
-      env:
-        CDN_PROVIDER: ${{ vars.CDN_PROVIDER || 'kakao' }}
-        # 카카오클라우드 설정
-        KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-        KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
-        KAKAO_REGION: ${{ vars.KAKAO_REGION || 'kr-central-1' }}
-        KAKAO_CDN_BUCKET: ${{ vars.STAGING_KAKAO_BUCKET }}
-        KAKAO_CDN_DOMAIN: ${{ vars.STAGING_KAKAO_DOMAIN }}
-        # AWS 설정 (대안)
-        AWS_REGION: ${{ vars.AWS_REGION }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        CDN_S3_BUCKET: ${{ vars.STAGING_S3_BUCKET }}
-        CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.STAGING_CLOUDFRONT_ID }}
-      run: |
-        if [ "$CDN_PROVIDER" = "kakao" ]; then
-          npm run deploy:kakao
-        else
-          npm run deploy:cdn
-        fi
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-  deploy-production:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    environment: production
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: cdn-build
-        path: dist-cdn/
-        
-    - name: Deploy to Production CDN
-      env:
-        CDN_PROVIDER: ${{ vars.CDN_PROVIDER || 'kakao' }}
-        # 카카오클라우드 설정
-        KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
-        KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
-        KAKAO_REGION: ${{ vars.KAKAO_REGION || 'kr-central-1' }}
-        KAKAO_CDN_BUCKET: ${{ vars.PRODUCTION_KAKAO_BUCKET }}
-        KAKAO_CDN_DOMAIN: ${{ vars.PRODUCTION_KAKAO_DOMAIN }}
-        # AWS 설정 (대안)
-        AWS_REGION: ${{ vars.AWS_REGION }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        CDN_S3_BUCKET: ${{ vars.PRODUCTION_S3_BUCKET }}
-        CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.PRODUCTION_CLOUDFRONT_ID }}
-      run: |
-        if [ "$CDN_PROVIDER" = "kakao" ]; then
-          npm run deploy:kakao
-        else
-          npm run deploy:cdn
-        fi
-      
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## CDN 배포 완료
-          
-          🎉 Real Captcha Widget ${{ github.ref }}가 CDN에 성공적으로 배포되었습니다.
-          
-          ### 🔗 CDN URLs
-          - **최신 버전**: `https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js`
-          - **고정 버전**: `https://cdn.realcaptcha.com/${{ github.ref }}/realcaptcha-widget.min.js`
-          - **사용 예제**: `https://cdn.realcaptcha.com/${{ github.ref }}/example.html`
-          
-          ### 📖 사용법
-          ```html
-          <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-          <script src="https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js"></script>
-          
-          <div id="captcha-container"></div>
-          <script>
-            renderRealCaptcha('captcha-container', {
-              theme: 'light',
-              size: 'normal'
-            }, function(result) {
-              console.log('캡차 결과:', result);
-            });
-          </script>
-          ```
-        draft: false
-        prerelease: false
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+
+            - name: Install dependencies
+              run: npm install --legacy-peer-deps
+
+            - name: Build for CDN
+              run: npm run build:cdn
+
+            - name: Deploy to CDN (dev-cdn 브랜치)
+              if: github.ref == 'refs/heads/dev-cdn'
+              env:
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_REGION: kr-central-1
+                  KAKAO_CDN_BUCKET: realcaptcha-cdn
+                  KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
+                  REACT_APP_VERSION: dev
+              run: npm run deploy:kakao
+
+            - name: Deploy to CDN (develop 브랜치 - 스테이징)
+              if: github.ref == 'refs/heads/develop'
+              env:
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_REGION: kr-central-1
+                  KAKAO_CDN_BUCKET: realcaptcha-cdn-staging
+                  KAKAO_CDN_DOMAIN: ${{ vars.STAGING_KAKAO_DOMAIN }}
+                  REACT_APP_VERSION: staging
+              run: npm run deploy:kakao
+
+            - name: Deploy to CDN (main/태그 - 프로덕션)  
+              if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+              env:
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }}
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }}
+                  KAKAO_REGION: kr-central-1
+                  KAKAO_CDN_BUCKET: realcaptcha-cdn
+                  KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
+                  REACT_APP_VERSION: ${{ github.ref_name }}
+              run: npm run deploy:kakao
