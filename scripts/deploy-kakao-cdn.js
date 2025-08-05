@@ -101,6 +101,9 @@ class KakaoCDNDeployer {
         console.log(`⚠️ 네트워크 연결 테스트 실패, 하지만 배포를 계속 진행합니다: ${error.message}`);
       }
       
+      // 버킷 존재 여부 확인
+      await this.checkBucketExists();
+      
       // 빌드 파일 존재 확인
       await this.validateBuildFiles();
       
@@ -119,6 +122,52 @@ class KakaoCDNDeployer {
       console.error('❌ CDN 배포 실패:', error.message);
       process.exit(1);
     }
+  }
+
+  async checkBucketExists() {
+    console.log('🔍 버킷 존재 여부 확인 중...');
+    
+    const path = `/v1/${this.config.projectId}/${this.config.bucket}`;
+    const url = new URL(path, this.config.endpoint);
+
+    let options = {
+      host: url.host,
+      path: url.pathname,
+      service: 's3',
+      region: this.config.region,
+      method: 'HEAD'
+    };
+
+    // AWS Signature V4 서명 적용
+    options = aws4.sign(options, {
+      accessKeyId: this.config.accessKey,
+      secretAccessKey: this.config.secretKey
+    });
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(url, options, (res) => {
+        if (res.statusCode === 200) {
+          console.log('✅ 버킷 접근 가능');
+          resolve();
+        } else if (res.statusCode === 404) {
+          console.log('❌ 버킷이 존재하지 않습니다');
+          reject(new Error(`버킷 '${this.config.bucket}'이 존재하지 않습니다. 카카오클라우드 콘솔에서 버킷을 생성해주세요.`));
+        } else if (res.statusCode === 403) {
+          console.log('❌ 버킷 접근 권한이 없습니다');
+          reject(new Error(`버킷 '${this.config.bucket}'에 접근할 권한이 없습니다. API 키 권한을 확인해주세요.`));
+        } else {
+          console.log(`❌ 버킷 확인 실패: ${res.statusCode} ${res.statusMessage}`);
+          reject(new Error(`버킷 확인 실패: ${res.statusCode} ${res.statusMessage}`));
+        }
+      });
+
+      req.on('error', (error) => {
+        console.log(`🚨 버킷 확인 중 네트워크 오류: ${error.message}`);
+        reject(error);
+      });
+
+      req.end();
+    });
   }
 
   async validateBuildFiles() {
