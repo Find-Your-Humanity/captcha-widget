@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-08-05T00:15:46.429Z",
+  "provider": "kakao",
+  "region": "kr-central-2",
+  "bucket": "realcatcha-cdn",
+  "files": [
+    "realcaptcha-widget.min.js"
+  ],
+  "urls": {
+    "widget_latest": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js",
+    "widget_versioned": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/v1.0.0/realcaptcha-widget.min.js",
+    "example": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/v1.0.0/example.html",
+    "metadata": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/v1.0.0/metadata.json"
+  }
+}
