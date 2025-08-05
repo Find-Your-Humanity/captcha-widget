@@ -26,7 +26,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     };
   }, []);
 
-  // 9장의 개별 이미지 (2~10.jpg 파일들)
+  // 9장의 테스트 이미지 (플레이스홀더)
   const images: ImageItem[] = [
     { id: 1, src: '/2.jpg', hasAbstractFeeling: true, selected: false },
     { id: 2, src: '/3.jpg', hasAbstractFeeling: true, selected: false },

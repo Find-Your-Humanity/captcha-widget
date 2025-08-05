@@ -4,19 +4,31 @@
   "private": true,
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^4.9.5"
+    "react-dom": "^18.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:cdn": "npm run build && npm run bundle:cdn",
+    "bundle:cdn": "node scripts/build-cdn.js",
+    "deploy:cdn": "npm run build:cdn && node scripts/deploy-cdn.js",
+    "deploy:kakao": "npm run build:cdn && node scripts/deploy-kakao-cdn.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "aws-sdk": "^2.1284.0",
+    "aws4": "^1.13.2",
+    "dotenv": "^16.0.0",
+    "fs-extra": "^11.1.0",
+    "react-scripts": "5.0.1",
+    "terser": "^5.16.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "^4.9.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.0"
   },
   "browserslist": {
     "production": [

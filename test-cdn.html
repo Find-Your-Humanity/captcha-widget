@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Captcha CDN 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #007bff;
+            font-weight: bold;
+        }
+        #captcha-container {
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            padding: 15px;
+            min-height: 100px;
+            background: #fafafa;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Real Captcha CDN 테스트</h1>
+        
+        <div class="test-section">
+            <h3>📦 CDN 로딩 상태</h3>
+            <div id="cdn-status">로딩 중...</div>
+            
+            <h4>📍 Object Storage URLs</h4>
+            <ul>
+                <li><strong>최신 버전:</strong> <a href="https://objectstorage.kr-central-2.kakaocloud.com/v1/1bb3c9ceb1db43928600b93b2a2b1d50/realcatcha-cdn/latest/realcaptcha-widget.min.js" target="_blank">latest/realcaptcha-widget.min.js</a></li>
+                <li><strong>CDN (구성중):</strong> <a href="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js" target="_blank">CDN via KakaoEdge</a></li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 캡차 위젯 테스트</h3>
+            <div id="captcha-container"></div>
+            
+            <button class="btn" onclick="loadCaptcha()">캡차 로드</button>
+            <button class="btn" onclick="resetCaptcha()">캡차 리셋</button>
+            <button class="btn" onclick="clearLog()">로그 클리어</button>
+            
+            <h4>📋 테스트 로그</h4>
+            <div id="test-log" class="log">테스트 로그가 여기에 표시됩니다...\n</div>
+        </div>
+
+        <div class="test-section">
+            <h3>⚡ 성능 측정</h3>
+            <div id="performance-info">성능 측정 중...</div>
+        </div>
+    </div>
+
+    <!-- React 의존성 (CDN) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Real Captcha Widget (카카오클라우드 Object Storage) -->
+    <script src="https://objectstorage.kr-central-2.kakaocloud.com/v1/1bb3c9ceb1db43928600b93b2a2b1d50/realcatcha-cdn/latest/realcaptcha-widget.min.js"></script>
+
+    <script>
+        let startTime = performance.now();
+        let captchaInstance = null;
+
+        function log(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').textContent = '로그가 클리어되었습니다.\n';
+        }
+
+        function updateCDNStatus() {
+            const statusElement = document.getElementById('cdn-status');
+            
+            if (typeof window.RealCaptcha !== 'undefined') {
+                statusElement.innerHTML = '<span class="success">✅ CDN 로딩 성공! RealCaptcha 클래스 사용 가능</span>';
+                log('✅ CDN 스크립트 로딩 성공');
+            } else if (typeof window.renderRealCaptcha !== 'undefined') {
+                statusElement.innerHTML = '<span class="success">✅ CDN 로딩 성공! renderRealCaptcha 함수 사용 가능</span>';
+                log('✅ CDN 스크립트 로딩 성공 (legacy mode)');
+            } else {
+                statusElement.innerHTML = '<span class="error">❌ CDN 로딩 실패 또는 대기 중</span>';
+                log('❌ CDN 스크립트 로딩 실패');
+            }
+        }
+
+        function measurePerformance() {
+            const loadTime = performance.now() - startTime;
+            const perfElement = document.getElementById('performance-info');
+            
+            perfElement.innerHTML = `
+                <p><strong>페이지 로드 시간:</strong> ${loadTime.toFixed(2)}ms</p>
+                <p><strong>React 로딩:</strong> ${typeof React !== 'undefined' ? '✅ 성공' : '❌ 실패'}</p>
+                <p><strong>ReactDOM 로딩:</strong> ${typeof ReactDOM !== 'undefined' ? '✅ 성공' : '❌ 실패'}</p>
+                <p><strong>Real Captcha 로딩:</strong> ${typeof window.RealCaptcha !== 'undefined' ? '✅ 성공' : '❌ 실패'}</p>
+            `;
+            
+            log(`⚡ 페이지 로드 시간: ${loadTime.toFixed(2)}ms`);
+        }
+
+        function loadCaptcha() {
+            log('🔄 캡차 로딩 시작...');
+            
+            try {
+                if (typeof window.renderRealCaptcha === 'function') {
+                    captchaInstance = window.renderRealCaptcha('captcha-container', {
+                        theme: 'light',
+                        size: 'normal',
+                        language: 'ko'
+                    }, function(result) {
+                        if (result.success) {
+                            log('🎉 캡차 성공! 토큰: ' + result.token);
+                            alert('캡차 성공! 토큰: ' + result.token);
+                        } else {
+                            log('❌ 캡차 실패: ' + result.error);
+                            alert('캡차 실패: ' + result.error);
+                        }
+                    });
+                    log('✅ 캡차 위젯 렌더링 완료');
+                } else if (typeof window.RealCaptcha !== 'undefined') {
+                    const captcha = new window.RealCaptcha({
+                        theme: 'light',
+                        size: 'normal',
+                        language: 'ko'
+                    });
+                    captchaInstance = captcha.render('captcha-container', function(result) {
+                        if (result.success) {
+                            log('🎉 캡차 성공! 토큰: ' + result.token);
+                            alert('캡차 성공! 토큰: ' + result.token);
+                        } else {
+                            log('❌ 캡차 실패: ' + result.error);
+                            alert('캡차 실패: ' + result.error);
+                        }
+                    });
+                    log('✅ 캡차 위젯 렌더링 완료 (클래스 방식)');
+                } else {
+                    log('❌ RealCaptcha가 로드되지 않았습니다');
+                    alert('❌ CDN에서 캡차 스크립트를 로드할 수 없습니다');
+                }
+            } catch (error) {
+                log('❌ 캡차 로딩 에러: ' + error.message);
+                alert('❌ 캡차 로딩 에러: ' + error.message);
+            }
+        }
+
+        function resetCaptcha() {
+            log('🔄 캡차 리셋...');
+            const container = document.getElementById('captcha-container');
+            container.innerHTML = '';
+            
+            if (captchaInstance && captchaInstance.reset) {
+                captchaInstance.reset();
+                log('✅ 캡차 리셋 완료');
+            } else {
+                log('✅ 캡차 컨테이너 클리어 완료');
+            }
+        }
+
+        // 페이지 로드 완료 후 실행
+        window.addEventListener('load', function() {
+            log('🚀 페이지 로드 완료');
+            updateCDNStatus();
+            measurePerformance();
+        });
+
+        // CDN 스크립트 로드 대기
+        setTimeout(function() {
+            updateCDNStatus();
+            measurePerformance();
+        }, 1000);
+
+        log('🌟 Real Captcha CDN 테스트 시작');
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+name: CDN Deploy Pipeline for Captcha Widget
+
+on:
+    push:
+        branches:
+            - main # main 브랜치에 푸시될 때 워크플로우 실행
+            - develop # develop 브랜치에 푸시될 때 워크플로우 실행  
+            - dev-cdn # dev-cdn 브랜치에 푸시될 때 워크플로우 실행
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest # 워크플로우를 실행할 환경
+
+        steps:
+            - name: Checkout application code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18" # CDN 빌드에 맞는 Node.js 버전 지정
+
+            - name: Install dependencies
+              run: npm install --legacy-peer-deps # TypeScript 호환성 위해 legacy-peer-deps 사용
+
+            - name: Build CDN bundle
+              run: npm run build:cdn # CDN용 빌드 스크립트 실행
+
+            - name: Deploy to Kakao Cloud CDN
+              env:
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }} # 카카오클라우드 Access Key
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }} # 카카오클라우드 Secret Key
+                  KAKAO_PROJECT_ID: ${{ secrets.KAKAO_PROJECT_ID }} # 프로젝트 ID
+                  KAKAO_REGION: ${{ secrets.KAKAO_REGION }} # 카카오클라우드 리전
+                  KAKAO_STORAGE_ENDPOINT: ${{ secrets.KAKAO_STORAGE_ENDPOINT }} # Object Storage 엔드포인트
+                  KAKAO_CDN_BUCKET: ${{ secrets.KAKAO_CDN_BUCKET }} # Object Storage 버킷명
+                  KAKAO_CDN_DOMAIN: ${{ secrets.KAKAO_CDN_DOMAIN }} # CDN 도메인
+              run: npm run deploy:kakao # deploy-kakao-cdn.js 스크립트 실행

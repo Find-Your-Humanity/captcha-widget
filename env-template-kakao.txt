@@ -1,0 +1,29 @@
+# 카카오클라우드 CDN 환경 변수 설정
+# 이 파일을 .env로 복사하고 실제 값으로 수정하세요
+
+# CDN 제공자 설정
+CDN_PROVIDER=kakao
+
+# 카카오클라우드 인증 정보
+KAKAO_ACCESS_KEY=ec572f9ea3e74da6b5f733bd34ed93db
+KAKAO_SECRET_KEY=218157c40df8aa021657c4ec2044391f863f31318b7ec691ef34ffab74634a1db1d8cd
+
+# 카카오클라우드 리전
+KAKAO_REGION=kr-central-2
+
+# Object Storage 설정
+KAKAO_PROJECT_ID=1bb3c9ceb1db43928600b93b2a2b1d50
+KAKAO_CDN_BUCKET=realcatcha-cdn
+KAKAO_STORAGE_ENDPOINT=https://objectstorage.kr-central-2.kakaocloud.com
+
+# CDN 설정 (실제 생성된 도메인)
+KAKAO_CDN_ENDPOINT=https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
+KAKAO_CDN_DOMAIN=1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com
+
+# 빌드 설정
+REACT_APP_API_ENDPOINT=https://api.realcaptcha.com
+REACT_APP_VERSION=1.0.0
+
+# 모니터링 설정 (선택사항)
+MONITORING_ENDPOINT=https://api.realcaptcha.com/monitoring
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
