@@ -2,10 +2,7 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const https = require('https');
-const crypto = require('crypto');
-const aws4 = require('aws4');
-const { URL } = require('url');
+const { execSync } = require('child_process');
 require('dotenv').config();
 
 /**

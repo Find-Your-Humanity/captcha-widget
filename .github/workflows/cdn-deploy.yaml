@@ -23,10 +23,16 @@ jobs:
             - name: Install dependencies
               run: npm install --legacy-peer-deps # TypeScript 호환성 위해 legacy-peer-deps 사용
 
+            - name: Install AWS CLI
+              run: |
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                unzip awscliv2.zip
+                sudo ./aws/install
+
             - name: Build CDN bundle
               run: npm run build:cdn # CDN용 빌드 스크립트 실행
 
-            - name: Deploy to Kakao Cloud CDN
+            - name: Deploy to Kakao Cloud CDN (AWS CLI)
               env:
                   KAKAO_ACCESS_KEY: ${{ secrets.ACCESS_KEY }} # 카카오클라우드 Access Key
                   KAKAO_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }} # 카카오클라우드 Secret Key
@@ -35,4 +41,4 @@ jobs:
                   KAKAO_STORAGE_ENDPOINT: https://objectstorage.kr-central-2.kakaocloud.com # Object Storage 엔드포인트
                   KAKAO_CDN_BUCKET: realcatcha-cdn # Object Storage 버킷명
                   KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com # CDN 도메인
-              run: npm run deploy:kakao # deploy-kakao-cdn.js 스크립트 실행
+              run: npm run deploy:kakao:aws # AWS CLI 기반 배포 스크립트 실행
