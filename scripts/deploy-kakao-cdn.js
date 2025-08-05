@@ -70,6 +70,14 @@ class KakaoCDNDeployer {
       throw new Error(`카카오클라우드 설정이 누락되었습니다: ${missing.join(', ')}`);
     }
 
+    // GitHub Actions 환경에서 디버깅 정보 출력
+    console.log('🔍 환경 변수 디버깅:');
+    console.log(`  - ACCESS_KEY: ${this.config.accessKey ? this.config.accessKey.substring(0, 8) + '...' : 'NOT_SET'}`);
+    console.log(`  - SECRET_KEY: ${this.config.secretKey ? this.config.secretKey.substring(0, 8) + '...' : 'NOT_SET'}`);
+    console.log(`  - PROJECT_ID: ${this.config.projectId}`);
+    console.log(`  - REGION: ${this.config.region}`);
+    console.log(`  - BUCKET: ${this.config.bucket}`);
+
     // 리전·엔드포인트 일관성 확인
     if (this.config.region !== 'kr-central-2') {
       throw new Error(`지원되지 않는 리전입니다: ${this.config.region}. kr-central-2만 사용하세요.`);
