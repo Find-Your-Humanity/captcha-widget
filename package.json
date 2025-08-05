@@ -13,7 +13,7 @@
     "bundle:cdn": "node scripts/build-cdn.js",
     "deploy:cdn": "npm run build:cdn && node scripts/deploy-cdn.js",
     "deploy:kakao": "npm run build:cdn && node scripts/deploy-kakao-cdn.js",
-    "deploy:kakao:aws": "npm run build:cdn && node scripts/deploy-kakao-aws-cli.js"
+    "deploy:kakao:aws": "npm run build:cdn && node scripts/deploy-kakao-aws-cli.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
