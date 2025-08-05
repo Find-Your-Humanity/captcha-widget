@@ -1,3 +1,5 @@
+import { addBehaviorData } from '../utils/behaviorData';
+
 interface Point {
   x: number;
   y: number;
@@ -50,7 +52,7 @@ class HandwritingBehaviorCollector {
       totalTime: 0,
       averageSpeed: 0,
       speedVariations: [],
-      sessionId: `session_${Date.now()}`,
+      sessionId: `handwriting_${Date.now()}`,
       startTime: Date.now(),
       endTime: 0,
       verificationSuccess: false
@@ -274,7 +276,7 @@ class HandwritingBehaviorCollector {
       totalTime: 0,
       averageSpeed: 0,
       speedVariations: [],
-      sessionId: `session_${Date.now()}`,
+      sessionId: `handwriting_${Date.now()}`,
       startTime: Date.now(),
       endTime: 0,
       verificationSuccess: false

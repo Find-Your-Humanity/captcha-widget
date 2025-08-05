@@ -1,35 +1,46 @@
-import React, { useState } from 'react';
-import './WarmFeelingCaptcha.css';
+import React, { useState, useRef, useEffect } from 'react';
+import './AbstractCaptcha.css';
+import ImageBehaviorCollector from './ImageBehaviorCollector';
+import { downloadBehaviorData } from '../utils/behaviorData';
 
 interface ImageItem {
   id: number;
   src: string;
-  hasWarmFeeling: boolean;
+  hasAbstractFeeling: boolean;
   selected: boolean;
 }
 
-interface WarmFeelingCaptchaProps {
+interface AbstractCaptchaProps {
   onSuccess?: () => void;
 }
 
-const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) => {
+const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
+
+  useEffect(() => {
+    behaviorCollector.current.startTracking();
+    return () => {
+      behaviorCollector.current.stopTracking();
+    };
+  }, []);
 
   // 9장의 테스트 이미지 (플레이스홀더)
   const images: ImageItem[] = [
-    { id: 1, src: 'https://picsum.photos/150/150?random=1', hasWarmFeeling: true, selected: false },
-    { id: 2, src: 'https://picsum.photos/150/150?random=2', hasWarmFeeling: true, selected: false },
-    { id: 3, src: 'https://picsum.photos/150/150?random=3', hasWarmFeeling: true, selected: false },
-    { id: 4, src: 'https://picsum.photos/150/150?random=4', hasWarmFeeling: false, selected: false },
-    { id: 5, src: 'https://picsum.photos/150/150?random=5', hasWarmFeeling: false, selected: false },
-    { id: 6, src: 'https://picsum.photos/150/150?random=6', hasWarmFeeling: false, selected: false },
-    { id: 7, src: 'https://picsum.photos/150/150?random=7', hasWarmFeeling: true, selected: false },
-    { id: 8, src: 'https://picsum.photos/150/150?random=8', hasWarmFeeling: false, selected: false },
-    { id: 9, src: 'https://picsum.photos/150/150?random=9', hasWarmFeeling: true, selected: false },
+    { id: 1, src: '/2.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 2, src: '/3.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 3, src: '/4.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 4, src: '/5.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 5, src: '/6.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 6, src: '/7.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 7, src: '/8.jpg', hasAbstractFeeling: true, selected: false },
+    { id: 8, src: '/9.jpg', hasAbstractFeeling: false, selected: false },
+    { id: 9, src: '/10.jpg', hasAbstractFeeling: true, selected: false },
   ];
 
   const handleImageClick = (imageId: number) => {
+    const wasSelected = selectedImages.includes(imageId);
     setSelectedImages(prev => {
       if (prev.includes(imageId)) {
         return prev.filter(id => id !== imageId);
@@ -37,31 +48,33 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
         return [...prev, imageId];
       }
     });
+    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
   };
 
   const handleVerify = () => {
     const selectedWarmImages = selectedImages.filter(id => {
       const image = images.find(img => img.id === id);
-      return image?.hasWarmFeeling;
+      return image?.hasAbstractFeeling;
     });
 
     const selectedColdImages = selectedImages.filter(id => {
       const image = images.find(img => img.id === id);
-      return image && !image.hasWarmFeeling;
+      return image && !image.hasAbstractFeeling;
     });
 
-    // 따뜻한 느낌의 이미지만 선택하고, 차가운 느낌의 이미지는 선택하지 않은 경우 성공
     const isCorrect = selectedWarmImages.length === 5 && selectedColdImages.length === 0;
     
+    // 행동 데이터 기록 및 다운로드
+    behaviorCollector.current.trackVerifyAttempt(isCorrect);
+    behaviorCollector.current.downloadMetrics(`abstractcaptcha_behavior_${Date.now()}.json`);
+
     if (isCorrect) {
       setIsVerified(true);
-      // 성공 시 부모 컴포넌트에 알림
       setTimeout(() => {
         console.log('Warm feeling captcha verified successfully!');
-        onSuccess?.(); // 부모 컴포넌트에 성공 알림
+        onSuccess?.();
       }, 1000);
     } else {
-      // 실패 시 선택 초기화
       setSelectedImages([]);
     }
   };
@@ -69,10 +82,19 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   const handleRefresh = () => {
     setSelectedImages([]);
     setIsVerified(false);
+    behaviorCollector.current.trackRefresh();
   };
 
   return (
-    <div className="warm-feeling-captcha">
+    <div 
+      className="warm-feeling-captcha"
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        behaviorCollector.current.trackMouseMove(x, y);
+      }}
+    >
       <div className="captcha-header">
         <span className="header-text">Select all images with a warm feeling.</span>
       </div>
@@ -83,6 +105,8 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
             onClick={() => handleImageClick(image.id)}
+            onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
+            onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >
             <div className="image-placeholder">
               <img src={image.src} alt={`Image ${image.id}`} />
@@ -139,4 +163,4 @@ const WarmFeelingCaptcha: React.FC<WarmFeelingCaptchaProps> = ({ onSuccess }) =>
   );
 };
 
-export default WarmFeelingCaptcha; 
+export default AbstractCaptcha; 

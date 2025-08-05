@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
-import WarmFeelingCaptcha from './WarmFeelingCaptcha';
+import AbstractCaptcha from './AbstractCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
+import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
+import { detectDevice } from '../utils/deviceDetector';
+import { handleTouchStart, handleTouchMove, handleTouchEnd, saveMobileBehaviorData, downloadMobileBehaviorData } from '../utils/mobileBehaviorData';
 
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
@@ -13,12 +16,9 @@ interface BehaviorData {
     exitTime?: number;
     totalTime?: number;
   };
-  sessionId: string;
-  userAgent: string;
-  screenResolution: { width: number; height: number };
 }
 
-type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'warm-feeling-captcha' | 'handwriting-captcha';
+type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'abstract-captcha' | 'handwriting-captcha';
 
 // 세션 시퀀스 관리를 위한 로컬 스토리지 키
 const SESSION_SEQUENCE_KEY = 'captcha_session_sequence';
@@ -31,22 +31,6 @@ const getNextSequence = (): number => {
   return nextSequence;
 };
 
-const generateSessionId = () => {
-  return `session${getNextSequence()}`;
-};
-
-const clearAllBehaviorData = () => {
-  // 기존 세션 데이터 모두 삭제
-  Object.keys(localStorage)
-    .filter(key => key.startsWith('captcha_behavior_') || 
-                  key.startsWith('image_behavior_') || 
-                  key.startsWith('warm_feeling_behavior_') || 
-                  key.startsWith('handwriting_behavior_'))
-    .forEach(key => localStorage.removeItem(key));
-  
-  // 세션 시퀀스 초기화
-  sessionStorage.removeItem(SESSION_SEQUENCE_KEY);
-};
 
 const Captcha: React.FC = () => {
   const [state, setState] = useState<CaptchaState>('initial');
@@ -62,12 +46,6 @@ const Captcha: React.FC = () => {
     scrollEvents: [],
     pageEvents: {
       enterTime: Date.now(),
-    },
-    sessionId: generateSessionId(),
-    userAgent: window.navigator.userAgent,
-    screenResolution: {
-      width: window.screen.width,
-      height: window.screen.height
     }
   });
 
@@ -76,41 +54,69 @@ const Captcha: React.FC = () => {
 
   // 컴포넌트 마운트시 기존 데이터 정리
   useEffect(() => {
-    clearAllBehaviorData();
+    const deviceType = detectDevice();
+    clearBehaviorData(); //기존 데이터 초기화
     
-    // 이벤트 리스너 등록
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseEvent);
-    window.addEventListener('mouseup', handleMouseEvent);
-    window.addEventListener('click', handleMouseEvent);
-    window.addEventListener('scroll', handleScroll);
+    if (deviceType === 'desktop') {
+      // 데스크톱: 마우스 이벤트 리스너 등록
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousedown', handleMouseEvent);
+      window.addEventListener('mouseup', handleMouseEvent);
+      window.addEventListener('click', handleMouseEvent);
+      window.addEventListener('scroll', handleScroll);
 
-    // 10초마다 로컬 스토리지에 자동 저장
-    autoSaveIntervalRef.current = setInterval(() => {
-      saveBehaviorData(false);
-    }, 10000);
+      // 10초마다 데스크톱 데이터 저장
+      autoSaveIntervalRef.current = setInterval(() => {
+        saveBehaviorData(false);
+      }, 10000);
+    } else {
+      // 모바일: 터치 이벤트 리스너 등록
+      window.addEventListener('touchstart', handleTouchStart);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+
+      // 10초마다 모바일 데이터 저장
+      autoSaveIntervalRef.current = setInterval(() => {
+        saveMobileBehaviorData();
+      }, 10000);
+    }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseEvent);
-      window.removeEventListener('mouseup', handleMouseEvent);
-      window.removeEventListener('click', handleMouseEvent);
-      window.removeEventListener('scroll', handleScroll);
+      if (deviceType === 'desktop') {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mousedown', handleMouseEvent);
+        window.removeEventListener('mouseup', handleMouseEvent);
+        window.removeEventListener('click', handleMouseEvent);
+        window.removeEventListener('scroll', handleScroll);
+        saveBehaviorData(true);
+      } else {
+        window.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+        saveMobileBehaviorData();
+      }
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
-      saveBehaviorData(true);
     };
   }, []);
 
-  // 상태 변경시 자동 저장 중지
+  // 상태 변경시 자동 저장 중지 및 데이터 다운로드
   useEffect(() => {
-    if (state === 'image-captcha' || state === 'warm-feeling-captcha' || state === 'handwriting-captcha') {
+    if (state === 'image-captcha' || state === 'abstract-captcha' || state === 'handwriting-captcha') {
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
         autoSaveIntervalRef.current = null;
       }
-      saveBehaviorData(true);
+
+      const deviceType = detectDevice();
+      if (deviceType === 'desktop') {
+        saveBehaviorData(true);
+        downloadBehaviorData();
+      } else {
+        saveMobileBehaviorData();
+        downloadMobileBehaviorData();
+      }
     }
   }, [state]);
 
@@ -161,135 +167,34 @@ const Captcha: React.FC = () => {
     });
   };
 
-  const saveBehaviorData = (shouldDownload: boolean = false) => {
-    try {
-      const data = {
-        ...behaviorDataRef.current,
-        pageEvents: {
-          ...behaviorDataRef.current.pageEvents,
-          exitTime: Date.now(),
-          totalTime: Date.now() - behaviorDataRef.current.pageEvents.enterTime,
-        },
-      };
-
-      // 로컬 스토리지에 저장
-      const storageKey = `captcha_behavior_${data.sessionId}`;
-      localStorage.setItem(storageKey, JSON.stringify(data));
-
-      if (shouldDownload) {
-        // 모든 세션 데이터 수집
-        const allSessions = Object.keys(localStorage)
-          .filter(key => key.startsWith('captcha_behavior_'))
-          .map(key => {
-            const sessionData = localStorage.getItem(key);
-            return sessionData ? JSON.parse(sessionData) : null;
-          })
-          .filter(Boolean);
-
-        // JS 파일 생성
-        const jsContent = `
-// Captcha Behavior Data
-const behaviorData = ${JSON.stringify(allSessions, null, 2)};
-
-// 데이터 분석을 위한 유틸리티 함수들
-const utils = {
-  // 총 마우스 이동 거리
-  getTotalMouseDistance() {
-    return behaviorData.reduce((total, session) => {
-      let sessionTotal = 0;
-      const movements = session.mouseMovements;
-      for (let i = 1; i < movements.length; i++) {
-        const dx = movements[i].x - movements[i-1].x;
-        const dy = movements[i].y - movements[i-1].y;
-        sessionTotal += Math.sqrt(dx * dx + dy * dy);
+  const saveBehaviorData = (isFinal: boolean = false) => {
+    const currentData = {
+      ...behaviorDataRef.current,
+      pageEvents: {
+        ...behaviorDataRef.current.pageEvents,
+        exitTime: isFinal ? Date.now() : undefined,
+        totalTime: isFinal ? Date.now() - behaviorDataRef.current.pageEvents.enterTime : undefined
       }
-      return total + sessionTotal;
-    }, 0);
-  },
-
-  // 클릭 분석
-  getClickAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalClicks: session.mouseClicks.length,
-      clickTypes: session.mouseClicks.reduce((acc, click) => {
-        acc[click.type] = (acc[click.type] || 0) + 1;
-        return acc;
-      }, {}),
-      clickPattern: session.mouseClicks.map(click => ({
-        type: click.type,
-        position: { x: click.x, y: click.y },
-        timestamp: click.timestamp
-      }))
-    }));
-  },
-
-  // 스크롤 분석
-  getScrollAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalScrolls: session.scrollEvents.length,
-      maxScroll: Math.max(...session.scrollEvents.map(e => e.position)),
-      scrollPattern: session.scrollEvents.map(e => ({
-        position: e.position,
-        timestamp: e.timestamp
-      }))
-    }));
-  },
-
-  // 세션 시간 분석
-  getTimeAnalysis() {
-    return behaviorData.map(session => ({
-      sessionId: session.sessionId,
-      totalTime: session.pageEvents.totalTime,
-      startTime: session.pageEvents.enterTime,
-      endTime: session.pageEvents.exitTime
-    }));
-  }
-};
-
-// 데이터 내보내기
-module.exports = {
-  behaviorData,
-  utils
-};`;
-
-        const blob = new Blob([jsContent], { type: 'application/javascript' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${data.sessionId}.js`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        // 다운로드 후 로컬 스토리지 클리어
-        Object.keys(localStorage)
-          .filter(key => key.startsWith('captcha_behavior_'))
-          .forEach(key => localStorage.removeItem(key));
-      }
-
-      // 데이터 초기화 및 새 세션 ID 생성
+    };
+    
+    // 데이터를 저장하고 behaviorDataRef 초기화
+    addBehaviorData(currentData);
+    
+    // 저장 후 새로운 이벤트 수집을 위해 배열들 초기화
+    if (!isFinal) {
       behaviorDataRef.current = {
+        ...behaviorDataRef.current,
         mouseMovements: [],
         mouseClicks: [],
         scrollEvents: [],
         pageEvents: {
           enterTime: Date.now(),
-        },
-        sessionId: generateSessionId(),
-        userAgent: window.navigator.userAgent,
-        screenResolution: {
-          width: window.screen.width,
-          height: window.screen.height
         }
       };
-    } catch (error) {
-      console.error('행동 데이터 저장 중 오류 발생:', error);
     }
   };
 
+  //captcha 체크박스 클릭 이벤트
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -297,26 +202,10 @@ module.exports = {
     if (state === 'initial') {
       setState('loading');
       setTimeout(() => {
-        const isSuccess = Math.random() > 0.5;
-        if (isSuccess) {
-          setState('success');
-          setTimeout(() => {
-            setCaptchaCount(prev => {
-              const newCount = prev + 1;
-              if (newCount % 3 === 0) {
-                setState('image-captcha');
-              } else if (newCount % 3 === 1) {
-                setState('warm-feeling-captcha');
-              } else {
-                setState('handwriting-captcha');
-              }
-              return newCount;
-            });
-          }, 1000);
-        } else {
-          setState('error');
-          setErrorMessage('잘못된 선택입니다. 다시 확인해주세요.');
-        }
+        setState('success');
+        setTimeout(() => {
+          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출
+        }, 1000);
       }, 2000);
     } else if (state === 'error') {
       setState('initial');
@@ -324,8 +213,41 @@ module.exports = {
     }
   };
 
+  // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
+  const handleBehaviorAnalysis = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/next-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // 결과에 따라 다음 캡차로 이동
+      if (data.next_captcha === 'imagecaptcha') {
+        setState('image-captcha');
+      } else if (data.next_captcha === 'handwritingcaptcha') {
+        setState('handwriting-captcha');
+      } else if (data.next_captcha === 'abstractcaptcha') {
+        setState('abstract-captcha');
+      } else {
+        setState('success'); // 추가 캡차 없이 통과
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setState('error');
+      setErrorMessage('서버 연결에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  // 사용자가 기본 캡차를 통과했을 때 호출
   const handleCaptchaSuccess = () => {
-    setState('initial');
+    handleBehaviorAnalysis();
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -348,8 +270,8 @@ module.exports = {
     <div className="captcha-container">
       {state === 'image-captcha' ? (
         <ImageCaptcha onSuccess={handleCaptchaSuccess} />
-      ) : state === 'warm-feeling-captcha' ? (
-        <WarmFeelingCaptcha onSuccess={handleCaptchaSuccess} />
+      ) : state === 'abstract-captcha' ? (
+        <AbstractCaptcha onSuccess={handleCaptchaSuccess} />
       ) : state === 'handwriting-captcha' ? (
         <HandwritingCaptcha onSuccess={handleCaptchaSuccess} />
       ) : (
