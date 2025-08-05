@@ -149,7 +149,7 @@ KAKAO_ACCESS_KEY=KAIA1234567890ABCDEF
 KAKAO_SECRET_KEY=your-secret-key-here
 
 # 리전 및 버킷
-KAKAO_REGION=kr-central-1
+KAKAO_REGION=kr-central-2
 KAKAO_CDN_BUCKET=realcaptcha-cdn
 
 # 엔드포인트
