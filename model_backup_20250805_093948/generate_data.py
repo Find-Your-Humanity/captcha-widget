@@ -1,13 +1,22 @@
 import json
 import numpy as np
 import os
+import sys
 from glob import glob
 from datetime import datetime
+from pathlib import Path
 import random
 
-# 1. 원본 JSON 데이터 경로
-data_dir = "/Users/kang-yeongmo/userdata/data"
-json_files = sorted(glob(os.path.join(data_dir, "behavior_data_*.json")))
+# config 모듈 import를 위한 경로 추가
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config.paths import get_data_file_path, DATA_DIR
+
+# 1. 원본 JSON 데이터 경로 (config 기반)
+data_dir = DATA_DIR
+json_files = sorted(glob(str(data_dir / "behavior_data_*.json")))
 
 # 2. 통계 계산용 피처 추출
 features = {
@@ -109,7 +118,12 @@ def generate_scroll_events(session_duration):
     return [{"timestamp": random.randint(0, session_duration)} for _ in range(random.randint(0, 3))]
 
 # 5. 증강 데이터 생성
-def generate_augmented_sessions(style="normal", n=50, output_dir="/Users/kang-yeongmo/userdata/generate_data"):
+def generate_augmented_sessions(style="normal", n=50, output_dir=None):
+    if output_dir is None:
+        output_dir = DATA_DIR / "generated"
+    
+    # Path 객체를 문자열로 변환
+    output_dir = str(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     for i in range(n):

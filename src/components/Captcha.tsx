@@ -216,7 +216,15 @@ const Captcha: React.FC = () => {
   // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
   const handleBehaviorAnalysis = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/next-captcha', {
+      // 환경변수를 사용한 안전한 API URL 설정
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://api.realcatcha.com'  // 프로덕션: 기본 도메인 사용
+          : 'http://localhost:8000');     // 개발: localhost 사용
+      console.log('🌐 현재 환경:', process.env.NODE_ENV);
+      console.log('🔗 API URL:', `${apiBaseUrl}/api/next-captcha`);
+      
+      const response = await fetch(`${apiBaseUrl}/api/next-captcha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송

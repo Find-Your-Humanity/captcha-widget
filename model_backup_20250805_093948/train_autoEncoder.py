@@ -5,8 +5,17 @@ import torch.nn as nn
 import pandas as pd
 import numpy as np
 import joblib
+import sys
+from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
+
+# config 모듈 import를 위한 경로 추가
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config.paths import get_model_file_path, ensure_directories
 
 class AutoEncoder(nn.Module):
     def __init__(self, input_dim):
@@ -64,16 +73,21 @@ def train(csv_path):
         print(f"Epoch {epoch+1}/50, Loss: {avg_loss:.6f}")
         if avg_loss < best_loss:
             best_loss = avg_loss
-            torch.save(model.state_dict(), "model.pth")
+            # 모델 디렉토리 확보 후 저장
+            ensure_directories()
+            torch.save(model.state_dict(), get_model_file_path("model.pth"))
 
     model.eval()
     with torch.no_grad():
         recon = model(X)
         mse = torch.mean((X - recon)**2, dim=1).numpy()
     threshold = np.mean(mse) + 3 * np.std(mse)
-    with open("threshold.txt", "w") as f:
+    
+    # threshold 파일 저장
+    with open(get_model_file_path("threshold.txt"), "w") as f:
         f.write(str(threshold))
-    print(f"✅ 최적 모델 저장 완료, Threshold: {threshold:.6f}")
+    print(f"✅ 최적 모델 저장 완료: {get_model_file_path('model.pth')}")
+    print(f"✅ Threshold 저장 완료: {threshold:.6f}")
 
 if __name__ == "__main__":
     train("merged_session_basic_data.csv")

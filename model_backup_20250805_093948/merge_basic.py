@@ -3,13 +3,24 @@ import numpy as np
 import pandas as pd
 from glob import glob
 import os
+import sys
+from pathlib import Path
 
-# 폴더 경로 설정 (절대경로 또는 상대경로)
-data_dir = "./data"  # 또는 "./data"
-json_files = sorted(glob(os.path.join(data_dir, "behavior_data_*.json")))  # 패턴에 맞는 파일 모두 가져오기
+# config 모듈 import를 위한 경로 추가
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent.parent
+sys.path.append(str(project_root))
 
-# # ✅ bot_sessions.json도 포함시키려면 아래 추가
-# json_files.append("/Users/kang-yeongmo/userdata/data/bot_sessions.json")
+from config.paths import DATA_DIR, get_data_file_path
+
+# 폴더 경로 설정 (config 기반)
+data_dir = DATA_DIR
+json_files = sorted(glob(str(data_dir / "behavior_data_*.json")))  
+
+# ✅ bot_sessions.json도 포함시키려면 아래 추가
+bot_sessions_file = get_data_file_path("bot_sessions.json")
+if bot_sessions_file.exists():
+    json_files.append(str(bot_sessions_file))
 
 summary_features = []
 

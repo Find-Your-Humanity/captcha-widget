@@ -5,7 +5,17 @@ import pandas as pd
 import numpy as np
 import joblib
 import json
+import sys
+import os
+from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
+
+# config 모듈 import를 위한 경로 추가
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent.parent
+sys.path.append(str(project_root))
+
+from config.paths import get_model_file_path, get_data_file_path
 
 class AutoEncoder(torch.nn.Module):
     def __init__(self, input_dim):
@@ -76,7 +86,7 @@ def detect_bot(json_path):
     df = pd.DataFrame([feat])
 
     # ✅ feature_columns 불러오기
-    feature_columns = joblib.load("feature_columns.pkl")
+    feature_columns = joblib.load(get_model_file_path("feature_columns.pkl"))
 
     # ✅ 누락된 컬럼은 0으로 채우고, 순서 맞추기
     for col in feature_columns:
@@ -84,15 +94,15 @@ def detect_bot(json_path):
             df[col] = 0
     df = df[feature_columns]
 
-    scaler = joblib.load("scaler.pkl")
+    scaler = joblib.load(get_model_file_path("scaler.pkl"))
     scaled = scaler.transform(df)
     x = torch.tensor(scaled, dtype=torch.float32)
 
     model = AutoEncoder(input_dim=x.shape[1])
-    model.load_state_dict(torch.load("model.pth"))
+    model.load_state_dict(torch.load(get_model_file_path("model.pth")))
     model.eval()
 
-    with open("threshold.txt", "r") as f:
+    with open(get_model_file_path("threshold.txt"), "r") as f:
         threshold = float(f.read())
 
     with torch.no_grad():
@@ -115,5 +125,15 @@ def detect_bot(json_path):
     }
 
 if __name__ == "__main__":
-    result = detect_bot("/Users/kang-yeongmo/userdata/data/bot_sessions.json")
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    # 테스트용 데이터 파일 경로
+    test_file = get_data_file_path("bot_sessions.json")
+    if test_file.exists():
+        result = detect_bot(str(test_file))
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"테스트 파일이 없습니다: {test_file}")
+        print("사용 가능한 데이터 파일들:")
+        data_dir = get_data_file_path("")
+        if data_dir.exists():
+            for file in data_dir.glob("*.json"):
+                print(f"  - {file.name}")
