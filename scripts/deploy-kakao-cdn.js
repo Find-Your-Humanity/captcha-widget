@@ -2,7 +2,10 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const { execSync } = require('child_process');
+const https = require('https');
+const crypto = require('crypto');
+const aws4 = require('aws4');
+const { URL } = require('url');
 require('dotenv').config();
 
 /**
@@ -17,10 +20,10 @@ class KakaoCDNDeployer {
     // 카카오클라우드 설정
     this.config = {
       region: process.env.KAKAO_REGION || 'kr-central-2',
-      accessKey: process.env.KAKAO_ACCESS_KEY,
-      secretKey: process.env.KAKAO_SECRET_KEY,
+      accessKey: process.env.ACCESS_KEY, // GitHub Secrets 이름에 맞게 수정
+      secretKey: process.env.ACCESS_SECRET_KEY, // GitHub Secrets 이름에 맞게 수정
       bucket: process.env.KAKAO_CDN_BUCKET || 'realcatcha-cdn',
-      projectId: process.env.KAKAO_PROJECT_ID || '1bb3c9ceb1db43928600b93b2a2b1d50',
+      projectId: process.env.PROJECT_NAME || '1bb3c9ceb1db43928600b93b2a2b1d50', // GitHub Secrets 이름에 맞게 수정
       endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaocloud.com',
       cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaocloud.com',
       cdnDomain: process.env.KAKAO_CDN_DOMAIN || 'cdn.realcaptcha.com'
@@ -67,14 +70,6 @@ class KakaoCDNDeployer {
       throw new Error(`카카오클라우드 설정이 누락되었습니다: ${missing.join(', ')}`);
     }
 
-    // GitHub Actions 환경에서 디버깅 정보 출력
-    console.log('🔍 환경 변수 디버깅:');
-    console.log(`  - ACCESS_KEY: ${this.config.accessKey ? this.config.accessKey.substring(0, 8) + '...' : 'NOT_SET'}`);
-    console.log(`  - SECRET_KEY: ${this.config.secretKey ? this.config.secretKey.substring(0, 8) + '...' : 'NOT_SET'}`);
-    console.log(`  - PROJECT_ID: ${this.config.projectId}`);
-    console.log(`  - REGION: ${this.config.region}`);
-    console.log(`  - BUCKET: ${this.config.bucket}`);
-
     // 리전·엔드포인트 일관성 확인
     if (this.config.region !== 'kr-central-2') {
       throw new Error(`지원되지 않는 리전입니다: ${this.config.region}. kr-central-2만 사용하세요.`);
@@ -98,9 +93,6 @@ class KakaoCDNDeployer {
         console.log(`⚠️ 네트워크 연결 테스트 실패, 하지만 배포를 계속 진행합니다: ${error.message}`);
       }
       
-      // 버킷 존재 여부 확인
-      await this.checkBucketExists();
-      
       // 빌드 파일 존재 확인
       await this.validateBuildFiles();
       
@@ -119,52 +111,6 @@ class KakaoCDNDeployer {
       console.error('❌ CDN 배포 실패:', error.message);
       process.exit(1);
     }
-  }
-
-  async checkBucketExists() {
-    console.log('🔍 버킷 존재 여부 확인 중...');
-    
-    const path = `/v1/${this.config.projectId}/${this.config.bucket}`;
-    const url = new URL(path, this.config.endpoint);
-
-    let options = {
-      host: url.host,
-      path: url.pathname,
-      service: 's3',
-      region: this.config.region,
-      method: 'HEAD'
-    };
-
-    // AWS Signature V4 서명 적용
-    options = aws4.sign(options, {
-      accessKeyId: this.config.accessKey,
-      secretAccessKey: this.config.secretKey
-    });
-
-    return new Promise((resolve, reject) => {
-      const req = https.request(url, options, (res) => {
-        if (res.statusCode === 200) {
-          console.log('✅ 버킷 접근 가능');
-          resolve();
-        } else if (res.statusCode === 404) {
-          console.log('❌ 버킷이 존재하지 않습니다');
-          reject(new Error(`버킷 '${this.config.bucket}'이 존재하지 않습니다. 카카오클라우드 콘솔에서 버킷을 생성해주세요.`));
-        } else if (res.statusCode === 403) {
-          console.log('❌ 버킷 접근 권한이 없습니다');
-          reject(new Error(`버킷 '${this.config.bucket}'에 접근할 권한이 없습니다. API 키 권한을 확인해주세요.`));
-        } else {
-          console.log(`❌ 버킷 확인 실패: ${res.statusCode} ${res.statusMessage}`);
-          reject(new Error(`버킷 확인 실패: ${res.statusCode} ${res.statusMessage}`));
-        }
-      });
-
-      req.on('error', (error) => {
-        console.log(`🚨 버킷 확인 중 네트워크 오류: ${error.message}`);
-        reject(error);
-      });
-
-      req.end();
-    });
   }
 
   async validateBuildFiles() {
