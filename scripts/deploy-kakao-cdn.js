@@ -20,10 +20,10 @@ class KakaoCDNDeployer {
     // 카카오클라우드 설정
     this.config = {
       region: process.env.KAKAO_REGION || 'kr-central-2',
-      accessKey: process.env.ACCESS_KEY, // GitHub Secrets 이름에 맞게 수정
-      secretKey: process.env.ACCESS_SECRET_KEY, // GitHub Secrets 이름에 맞게 수정
+      accessKey: process.env.KAKAO_ACCESS_KEY,
+      secretKey: process.env.KAKAO_SECRET_KEY,
       bucket: process.env.KAKAO_CDN_BUCKET || 'realcatcha-cdn',
-      projectId: process.env.PROJECT_NAME || '1bb3c9ceb1db43928600b93b2a2b1d50', // GitHub Secrets 이름에 맞게 수정
+      projectId: process.env.KAKAO_PROJECT_ID || '1bb3c9ceb1db43928600b93b2a2b1d50',
       endpoint: process.env.KAKAO_STORAGE_ENDPOINT || 'https://objectstorage.kr-central-2.kakaocloud.com',
       cdnEndpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://realcaptcha-cdn.kr-central-2.kakaocloud.com',
       cdnDomain: process.env.KAKAO_CDN_DOMAIN || 'cdn.realcaptcha.com'

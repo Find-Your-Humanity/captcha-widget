@@ -28,11 +28,11 @@ jobs:
 
             - name: Deploy to Kakao Cloud CDN
               env:
-                  ACCESS_KEY: ${{ secrets.ACCESS_KEY }} # 카카오클라우드 Access Key
-                  ACCESS_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }} # 카카오클라우드 Secret Key
-                  PROJECT_NAME: ${{ secrets.PROJECT_NAME }} # 프로젝트 ID
-                  KAKAO_REGION: kr-central-2 # 카카오클라우드 리전
-                  KAKAO_STORAGE_ENDPOINT: https://objectstorage.kr-central-2.kakaocloud.com # Object Storage 엔드포인트
-                  KAKAO_CDN_BUCKET: realcatcha-cdn # Object Storage 버킷명
-                  KAKAO_CDN_DOMAIN: 1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com # CDN 도메인
+                  KAKAO_ACCESS_KEY: ${{ secrets.KAKAO_ACCESS_KEY }} # 카카오클라우드 Access Key
+                  KAKAO_SECRET_KEY: ${{ secrets.KAKAO_SECRET_KEY }} # 카카오클라우드 Secret Key
+                  KAKAO_PROJECT_ID: ${{ secrets.KAKAO_PROJECT_ID }} # 프로젝트 ID
+                  KAKAO_REGION: ${{ secrets.KAKAO_REGION }} # 카카오클라우드 리전
+                  KAKAO_STORAGE_ENDPOINT: ${{ secrets.KAKAO_STORAGE_ENDPOINT }} # Object Storage 엔드포인트
+                  KAKAO_CDN_BUCKET: ${{ secrets.KAKAO_CDN_BUCKET }} # Object Storage 버킷명
+                  KAKAO_CDN_DOMAIN: ${{ secrets.KAKAO_CDN_DOMAIN }} # CDN 도메인
               run: npm run deploy:kakao # deploy-kakao-cdn.js 스크립트 실행
