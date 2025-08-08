@@ -14,6 +14,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
+  const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
 
   // 이미지 데이터 (4~8.jpg 사용)
   const images = [
@@ -119,15 +120,13 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   };
 
   const handleVerify = () => {
+    if (isTestMode) {
+      behaviorCollector.current.setVerificationResult(true);
+      setTimeout(() => onSuccess?.(), 300);
+      return;
+    }
     const isSuccess = drawingHistory.length > 0;
-    
-    // 검증 결과 설정
     behaviorCollector.current.setVerificationResult(isSuccess);
-    
-    // 행동 데이터 다운로드
-    behaviorCollector.current.downloadMetrics();
-    
-    // 기존 검증 로직
     if (isSuccess) {
       console.log('Handwriting captcha verified successfully!');
       onSuccess?.();
@@ -207,8 +206,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
         </div>
         
         <button 
-          className="verify-button active"
+          className={`verify-button ${isTestMode || drawingHistory.length > 0 ? 'active' : ''}`}
           onClick={handleVerify}
+          disabled={!isTestMode && drawingHistory.length === 0}
         >
           VERIFY
         </button>

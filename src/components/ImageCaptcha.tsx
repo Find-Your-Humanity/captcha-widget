@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
-import { downloadBehaviorData } from '../utils/behaviorData';
 
 interface ImageCaptchaProps {
   onSuccess?: () => void;
@@ -21,6 +20,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
+  const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
@@ -42,6 +42,13 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   };
 
   const handleVerify = () => {
+    if (isTestMode) {
+      // 테스트 모드: 정답 여부와 무관하게 다음 단계로 진행
+      behaviorCollector.current.trackVerifyAttempt(true);
+      setIsVerified(true);
+      setTimeout(() => onSuccess?.(), 300);
+      return;
+    }
     const selectedBikeImages = selectedImages.filter(id => {
       const image = images.find(img => img.id === id);
       return image?.hasBike;
@@ -54,9 +61,8 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
 
     const isCorrect = selectedBikeImages.length === 3 && selectedNonBikeImages.length === 0;
     
-    // 행동 데이터 기록 및 다운로드
+    // 행동 데이터 기록
     behaviorCollector.current.trackVerifyAttempt(isCorrect);
-    behaviorCollector.current.downloadMetrics();
 
     if (isCorrect) {
       setIsVerified(true);
@@ -164,9 +170,9 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         </div>
         
         <button 
-          className={`verify-button ${selectedImages.length > 0 ? 'active' : ''}`}
+          className={`verify-button ${(isTestMode || selectedImages.length > 0) ? 'active' : ''}`}
           onClick={handleVerify}
-          disabled={selectedImages.length === 0}
+          disabled={!isTestMode && selectedImages.length === 0}
         >
           VERIFY
         </button>

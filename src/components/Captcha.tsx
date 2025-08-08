@@ -3,9 +3,9 @@ import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
 import AbstractCaptcha from './AbstractCaptcha';
 import HandwritingCaptcha from './HandwritingCaptcha';
-import { addBehaviorData, downloadBehaviorData, clearBehaviorData } from '../utils/behaviorData';
+import { addBehaviorData, clearBehaviorData } from '../utils/behaviorData';
 import { detectDevice } from '../utils/deviceDetector';
-import { handleTouchStart, handleTouchMove, handleTouchEnd, saveMobileBehaviorData, downloadMobileBehaviorData } from '../utils/mobileBehaviorData';
+import { handleTouchStart, handleTouchMove, handleTouchEnd, saveMobileBehaviorData } from '../utils/mobileBehaviorData';
 
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
@@ -30,7 +30,6 @@ const getNextSequence = (): number => {
   sessionStorage.setItem(SESSION_SEQUENCE_KEY, nextSequence.toString());
   return nextSequence;
 };
-
 
 const Captcha: React.FC = () => {
   const [state, setState] = useState<CaptchaState>('initial');
@@ -112,13 +111,21 @@ const Captcha: React.FC = () => {
       const deviceType = detectDevice();
       if (deviceType === 'desktop') {
         saveBehaviorData(true);
-        downloadBehaviorData();
       } else {
         saveMobileBehaviorData();
-        downloadMobileBehaviorData();
       }
     }
   }, [state]);
+
+  // 테스트 모드 여부 (환경변수)
+  const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+
+  // 테스트 모드용: 다음 캡차 타입 순환 선택
+  const pickNextCaptchaType = (): CaptchaState => {
+    const sequence = getNextSequence();
+    const order: CaptchaState[] = ['image-captcha', 'handwriting-captcha', 'abstract-captcha'];
+    return order[(sequence - 1) % order.length];
+  };
 
   const handleMouseMove = (e: MouseEvent) => {
     // 현재 마우스 위치와 시간
@@ -204,7 +211,7 @@ const Captcha: React.FC = () => {
       setTimeout(() => {
         setState('success');
         setTimeout(() => {
-          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출
+          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출 (테스트 모드에서는 순환)
         }, 1000);
       }, 2000);
     } else if (state === 'error') {
@@ -216,6 +223,13 @@ const Captcha: React.FC = () => {
   // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
   const handleBehaviorAnalysis = async () => {
     try {
+      // 테스트 모드에서는 백엔드 호출 없이 순환
+      if (isTestMode) {
+        const nextType = pickNextCaptchaType();
+        setState(nextType);
+        return;
+      }
+
       // 환경변수를 사용한 안전한 API URL 설정
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
         (process.env.NODE_ENV === 'production' 
@@ -255,7 +269,12 @@ const Captcha: React.FC = () => {
 
   // 사용자가 기본 캡차를 통과했을 때 호출
   const handleCaptchaSuccess = () => {
-    handleBehaviorAnalysis();
+    if (isTestMode) {
+      const nextType = pickNextCaptchaType();
+      setState(nextType);
+    } else {
+      handleBehaviorAnalysis();
+    }
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
