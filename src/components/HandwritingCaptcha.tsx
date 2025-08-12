@@ -119,19 +119,64 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (isTestMode) {
       behaviorCollector.current.setVerificationResult(true);
       setTimeout(() => onSuccess?.(), 300);
       return;
     }
-    const isSuccess = drawingHistory.length > 0;
-    behaviorCollector.current.setVerificationResult(isSuccess);
-    if (isSuccess) {
-      console.log('Handwriting captcha verified successfully!');
-      onSuccess?.();
-    } else {
-      alert('키워드를 입력해주세요.');
+
+    // 손글씨가 없는 경우 안내
+    if (drawingHistory.length === 0) {
+      alert('손글씨를 먼저 작성해주세요.');
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      alert('캔버스를 찾을 수 없습니다. 다시 시도해주세요.');
+      return;
+    }
+
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://api.realcatcha.com'
+          : 'http://localhost:8000');
+
+      // 캔버스 이미지를 Base64 데이터 URL로 추출
+      const imageDataUrl = canvas.toDataURL('image/png');
+
+      const response = await fetch(`${apiBaseUrl}/api/verify-handwriting`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: imageDataUrl,
+          // 선택: 추가 컨텍스트 전송 가능
+          // keywords,  // 필요시 활성화
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: { success: boolean; redirect_url?: string } = await response.json();
+
+      if (data.success) {
+        behaviorCollector.current.setVerificationResult(true);
+        const targetUrl = data.redirect_url || document.referrer || window.location.origin;
+        window.location.assign(targetUrl);
+      } else {
+        behaviorCollector.current.setVerificationResult(false);
+        alert('정답이 아닙니다. 다시 시도해주세요.');
+        // 새로고침(리셋)
+        clearCanvas();
+        setKeywords('');
+      }
+    } catch (error) {
+      console.error('Handwriting verify error:', error);
+      alert('서버 검증 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
