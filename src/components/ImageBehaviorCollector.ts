@@ -46,8 +46,8 @@ class ImageBehaviorCollector {
       attemptDuration: 0
     };
 
-    // 이미지 상호작용 초기화 (9개 이미지)
-    for (let i = 1; i <= 9; i++) {
+    // 이미지 상호작용 초기화 (백엔드 ID: 0..8)
+    for (let i = 0; i < 9; i++) {
       this.metrics.imageInteractions[i] = {
         imageId: i,
         clicks: [],
@@ -171,6 +171,23 @@ class ImageBehaviorCollector {
   public trackImageSelection(imageId: number, isSelected: boolean): void {
     if (!this.isTracking) return;
     // 선택/해제 순서 기록
+    // 누락된 ID는 즉시 초기화 (백엔드가 0..8 ID를 사용함)
+    if (!this.metrics.imageInteractions[imageId]) {
+      this.metrics.imageInteractions[imageId] = {
+        imageId,
+        clicks: [],
+        hovers: [],
+        totalHoverTime: 0,
+        isSelected: false,
+        interactionDensity: {
+          clickCount: 0,
+          hoverCount: 0,
+          totalHoverTime: 0,
+          averageDwellTime: 0,
+          density: 0,
+        },
+      };
+    }
     if (isSelected) {
       this.metrics.selectionOrder.push(imageId);
       this.metrics.imageInteractions[imageId].isSelected = true;

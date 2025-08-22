@@ -2,11 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import './AbstractCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
 
-interface ImageItem {
+interface RemoteImageItem {
   id: number;
-  src: string;
-  hasAbstractFeeling: boolean;
-  selected: boolean;
+  url: string;
 }
 
 interface AbstractCaptchaProps {
@@ -16,71 +14,105 @@ interface AbstractCaptchaProps {
 const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [challengeId, setChallengeId] = useState<string>('');
+  const [question, setQuestion] = useState<string>('');
+  const [ttl, setTtl] = useState<number>(0);
+  const [images, setImages] = useState<RemoteImageItem[]>([]);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
+    fetchChallenge();
     return () => {
       behaviorCollector.current.stopTracking();
     };
+
   }, []);
 
-  // 9장의 테스트 이미지 (플레이스홀더)
-  const images: ImageItem[] = [
-    { id: 1, src: '/2.jpg', hasAbstractFeeling: true, selected: false },
-    { id: 2, src: '/3.jpg', hasAbstractFeeling: true, selected: false },
-    { id: 3, src: '/4.jpg', hasAbstractFeeling: true, selected: false },
-    { id: 4, src: '/5.jpg', hasAbstractFeeling: false, selected: false },
-    { id: 5, src: '/6.jpg', hasAbstractFeeling: false, selected: false },
-    { id: 6, src: '/7.jpg', hasAbstractFeeling: false, selected: false },
-    { id: 7, src: '/8.jpg', hasAbstractFeeling: true, selected: false },
-    { id: 8, src: '/9.jpg', hasAbstractFeeling: false, selected: false },
-    { id: 9, src: '/10.jpg', hasAbstractFeeling: true, selected: false },
-  ];
+  useEffect(() => {
+    if (ttl <= 0) return;
+    const timer = setInterval(() => setTtl((t) => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(timer);
+  }, [ttl]);
+
+  const fetchChallenge = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setSelectedImages([]);
+      setIsVerified(false);
+      const resp = await fetch(`${apiBaseUrl}/api/abstract-captcha`, { method: 'POST' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      console.debug('[AbstractCaptcha] payload /api/abstract-captcha', data);
+      setChallengeId(data.challenge_id);
+      setQuestion(data.question || '이미지를 선택하세요');
+      setTtl(data.ttl || 45);
+      const imgs = (data.images || []) as Array<{ id: number; url: string }>;
+      // 절대 URL로 보정
+      const absoluteImgs = imgs.map((it) => ({ id: it.id, url: it.url.startsWith('http') ? it.url : `${apiBaseUrl}${it.url}` }));
+      setImages(absoluteImgs);
+      console.debug('[AbstractCaptcha] normalized images', absoluteImgs);
+    } catch (e: any) {
+      console.error(e);
+      setError('문제를 불러오지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleImageClick = (imageId: number) => {
     const wasSelected = selectedImages.includes(imageId);
-    setSelectedImages(prev => {
-      if (prev.includes(imageId)) {
-        return prev.filter(id => id !== imageId);
-      } else {
-        return [...prev, imageId];
-      }
-    });
+    setSelectedImages((prev) => (wasSelected ? prev.filter((id) => id !== imageId) : [...prev, imageId]));
     behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    if (!challengeId) return;
     if (isTestMode) {
       behaviorCollector.current.trackVerifyAttempt(true);
       setIsVerified(true);
       setTimeout(() => onSuccess?.(), 300);
       return;
     }
-    const selectedWarmImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image?.hasAbstractFeeling;
-    });
-
-    const selectedColdImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image && !image.hasAbstractFeeling;
-    });
-
-    const isCorrect = selectedWarmImages.length === 5 && selectedColdImages.length === 0;
-    
-    // 행동 데이터 기록
-    behaviorCollector.current.trackVerifyAttempt(isCorrect);
-
-    if (isCorrect) {
-      setIsVerified(true);
-      setTimeout(() => {
-        console.log('Warm feeling captcha verified successfully!');
-        onSuccess?.();
-      }, 1000);
-    } else {
-      setSelectedImages([]);
+    try {
+      setLoading(true);
+      const requestBody = { challenge_id: challengeId, selections: selectedImages };
+      console.debug('[AbstractCaptcha] request /api/abstract-verify', requestBody);
+      const resp = await fetch(`${apiBaseUrl}/api/abstract-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      console.debug('[AbstractCaptcha] payload /api/abstract-verify', data);
+      const ok = !!data.success;
+      behaviorCollector.current.trackVerifyAttempt(ok);
+      if (ok) {
+        const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
+        if (targetUrl && typeof window !== 'undefined') {
+          window.location.href = targetUrl;
+          return;
+        }
+        // 리다이렉트 설정이 없으면 다음 캡챠로 넘어가지 않고 성공 상태만 표시
+        setIsVerified(true);
+        return;
+      } else {
+        // 실패 시 경고 및 리셋
+        alert('정답이 아닙니다. 다시 시도해주세요.');
+        setSelectedImages([]);
+        fetchChallenge();
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError('검증에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,10 +120,11 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     setSelectedImages([]);
     setIsVerified(false);
     behaviorCollector.current.trackRefresh();
+    fetchChallenge();
   };
 
   return (
-    <div 
+    <div
       className="warm-feeling-captcha"
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -101,9 +134,13 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">Select all images with a warm feeling.</span>
+        <span className="header-text">{question}{ttl > 0 ? ` · ${ttl}s` : ''}</span>
       </div>
-      
+
+      {error && (
+        <div style={{ padding: 8, color: '#c00', fontSize: 12, textAlign: 'center' }}>{error}</div>
+      )}
+
       <div className="image-grid">
         {images.map((image) => (
           <div
@@ -114,52 +151,32 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
             onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >
             <div className="image-placeholder">
-              <img src={image.src} alt={`Image ${image.id}`} />
+              <img src={image.url} alt={`Image ${image.id}`} />
             </div>
             {selectedImages.includes(image.id) && (
               <div className="selection-overlay">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-                    fill="#ffffff"
-                  />
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="#ffffff" />
                 </svg>
               </div>
             )}
           </div>
         ))}
       </div>
-      
+
       <div className="captcha-controls">
         <div className="control-left">
-          <button className="control-button" onClick={handleRefresh}>
+          <button className="control-button" onClick={handleRefresh} disabled={loading}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
-                fill="#666"
-              />
-            </svg>
-          </button>
-          <button className="control-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                fill="#666"
-              />
-            </svg>
-          </button>
-          <button className="control-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#666" strokeWidth="2" fill="none"/>
-              <path d="M12 16v-4M12 8h.01" stroke="#666" strokeWidth="2" fill="none"/>
+              <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="#666" />
             </svg>
           </button>
         </div>
-        
-        <button 
+
+        <button
           className={`verify-button ${(isTestMode || selectedImages.length > 0) ? 'active' : ''}`}
           onClick={handleVerify}
-          disabled={!isTestMode && selectedImages.length === 0}
+          disabled={!isTestMode && (selectedImages.length === 0 || loading)}
         >
           VERIFY
         </button>
@@ -168,4 +185,4 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   );
 };
 
-export default AbstractCaptcha; 
+export default AbstractCaptcha;

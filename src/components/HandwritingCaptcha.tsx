@@ -165,8 +165,11 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
 
       if (data.success) {
         behaviorCollector.current.setVerificationResult(true);
-        const targetUrl = data.redirect_url || document.referrer || window.location.origin;
-        window.location.assign(targetUrl);
+        const envTarget = process.env.REACT_APP_SUCCESS_REDIRECT_URL;
+        const targetUrl = envTarget || data.redirect_url || document.referrer || window.location.origin;
+        if (typeof window !== 'undefined') {
+          window.location.assign(targetUrl);
+        }
       } else {
         behaviorCollector.current.setVerificationResult(false);
         alert('정답이 아닙니다. 다시 시도해주세요.');

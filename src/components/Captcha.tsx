@@ -221,12 +221,19 @@ const Captcha: React.FC = () => {
   };
 
   // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
+  const inFlightRef = useRef<boolean>(false);
   const handleBehaviorAnalysis = async () => {
     try {
+      if (inFlightRef.current) {
+        console.debug('[Captcha] next-captcha call suppressed: request already in-flight');
+        return;
+      }
+      inFlightRef.current = true;
       // 테스트 모드에서는 백엔드 호출 없이 순환
       if (isTestMode) {
         const nextType = pickNextCaptchaType();
         setState(nextType);
+        inFlightRef.current = false;
         return;
       }
 
@@ -245,10 +252,12 @@ const Captcha: React.FC = () => {
       });
 
       if (!response.ok) {
+        inFlightRef.current = false;
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.debug('[Captcha] payload /api/next-captcha', data);
 
       // 결과에 따라 다음 캡차로 이동
       if (data.next_captcha === 'imagecaptcha') {
@@ -260,10 +269,12 @@ const Captcha: React.FC = () => {
       } else {
         setState('success'); // 추가 캡차 없이 통과
       }
+      inFlightRef.current = false;
     } catch (error) {
       console.error('Error:', error);
       setState('error');
       setErrorMessage('서버 연결에 실패했습니다. 다시 시도해주세요.');
+      inFlightRef.current = false;
     }
   };
 
