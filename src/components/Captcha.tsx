@@ -244,11 +244,26 @@ const Captcha: React.FC = () => {
           : 'http://localhost:8000');     // 개발: localhost 사용
       console.log('🌐 현재 환경:', process.env.NODE_ENV);
       console.log('🔗 API URL:', `${apiBaseUrl}/api/next-captcha`);
-      
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const bd = behaviorDataRef.current;
+      const payload = { behavior_data: bd };
+      try {
+        const mm = (bd?.mouseMovements || []).length;
+        const mc = (bd?.mouseClicks || []).length;
+        const se = (bd?.scrollEvents || []).length;
+        const approxBytes = JSON.stringify(payload).length;
+        const sample = {
+          mouseMovements: (bd?.mouseMovements || []).slice(0, 2),
+          mouseClicks: (bd?.mouseClicks || []).slice(0, 2),
+          scrollEvents: (bd?.scrollEvents || []).slice(0, 2),
+        };
+        console.debug('[Captcha] sending /api/next-captcha', { counts: { mm, mc, se }, approxBytes, sample });
+      } catch {}
+
       const response = await fetch(`${apiBaseUrl}/api/next-captcha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ behavior_data: behaviorDataRef.current }) // 객체 자체 전송
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -257,7 +272,21 @@ const Captcha: React.FC = () => {
       }
 
       const data = await response.json();
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const durationMs = Math.round(t1 - t0);
       console.debug('[Captcha] payload /api/next-captcha', data);
+      try {
+        const preview = {
+          status: response.status,
+          durationMs,
+          next_captcha: data?.next_captcha,
+          captcha_type: data?.captcha_type,
+          confidence_score: data?.confidence_score,
+          ml_service_used: data?.ml_service_used,
+          is_bot_detected: data?.is_bot_detected,
+        };
+        console.debug('[Captcha] summary /api/next-captcha', preview);
+      } catch {}
 
       // 결과에 따라 다음 캡차로 이동
       if (data.next_captcha === 'imagecaptcha') {
