@@ -19,8 +19,10 @@ interface ImageItem {
 const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+  const ttlExpiredRef = useRef(false);
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
@@ -28,6 +30,25 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       behaviorCollector.current.stopTracking();
     };
   }, []);
+
+  // TTL 카운트다운
+  useEffect(() => {
+    if (ttl <= 0) return;
+    const timer = setInterval(() => setTtl((t) => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(timer);
+  }, [ttl]);
+
+  // TTL 만료 시 자동 리셋
+  useEffect(() => {
+    if (ttl === 0 && !isVerified) {
+      if (ttlExpiredRef.current) return;
+      ttlExpiredRef.current = true;
+      handleRefresh();
+      setTtl(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+    } else if (ttl > 0) {
+      ttlExpiredRef.current = false;
+    }
+  }, [ttl, isVerified]);
 
   const handleImageClick = (imageId: number, event: MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
@@ -108,7 +129,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">Select all images with a bike.</span>
+        <span className="header-text">Select all images with a bike{ttl > 0 ? ` · ${ttl}s` : ''}.</span>
       </div>
       
       <div className="image-grid">
