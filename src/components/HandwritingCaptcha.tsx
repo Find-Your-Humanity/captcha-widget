@@ -15,6 +15,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+  const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+  const ttlExpiredRef = useRef(false);
 
   // 이미지 데이터 (4~8.jpg 사용)
   const images = [
@@ -51,6 +53,26 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
       behaviorCollector.current.stopTracking();
     };
   }, []);
+
+  // TTL 카운트다운
+  useEffect(() => {
+    if (ttl <= 0) return;
+    const timer = setInterval(() => setTtl((t) => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(timer);
+  }, [ttl]);
+
+  // TTL 만료 시 자동 리셋
+  useEffect(() => {
+    if (ttl === 0) {
+      if (ttlExpiredRef.current) return;
+      ttlExpiredRef.current = true;
+      clearCanvas();
+      setKeywords('');
+      setTtl(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+    } else if (ttl > 0) {
+      ttlExpiredRef.current = false;
+    }
+  }, [ttl]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -191,7 +213,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   return (
     <div className="handwriting-captcha">
       <div className="captcha-header">
-        <span className="header-text">Look at the images and write the keywords that come to mind by hand.</span>
+        <span className="header-text">Look at the images and write the keywords that come to mind by hand{ttl > 0 ? ` · ${ttl}s` : ''}.</span>
       </div>
       
       <div className="images-container">
