@@ -94,8 +94,10 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
+        console.log('Abstract captcha verified successfully!');
         const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         if (targetUrl && typeof window !== 'undefined') {
+          console.log('Redirecting to:', targetUrl);
           window.location.href = targetUrl;
           return;
         }
