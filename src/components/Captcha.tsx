@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
 import AbstractCaptcha from './AbstractCaptcha';
