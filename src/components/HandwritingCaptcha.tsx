@@ -4,9 +4,10 @@ import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 
 interface HandwritingCaptchaProps {
   onSuccess?: () => void;
+  samples?: string[];
 }
 
-const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) => {
+const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
@@ -18,14 +19,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const ttlExpiredRef = useRef(false);
 
-  // 이미지 데이터 (4~8.jpg 사용)
-  const images = [
-    { id: 1, src: '/4.jpg', alt: 'Kingfisher bird' },
-    { id: 2, src: '/5.jpg', alt: 'Mountain landscape' },
-    { id: 3, src: '/6.jpg', alt: 'Person on bicycle' },
-    { id: 4, src: '/7.jpg', alt: 'Kingfisher bird duplicate' },
-    { id: 5, src: '/8.jpg', alt: 'Mountain landscape duplicate' },
-  ];
+  // 백엔드에서 전달된 샘플 URL만 사용 (폴백 제거)
+  const images = (samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -169,7 +164,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
       // 캔버스 이미지를 Base64 데이터 URL로 추출
       const imageDataUrl = canvas.toDataURL('image/png');
 
-      const response = await fetch(`${apiBaseUrl}/api/verify-handwriting`, {
+      const response = await fetch(`${apiBaseUrl}/api/handwriting-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +208,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   return (
     <div className="handwriting-captcha">
       <div className="captcha-header">
-        <span className="header-text">Look at the images and write the keywords that come to mind by hand{ttl > 0 ? ` · ${ttl}s` : ''}.</span>
+        <span className="header-text">Look at the images and write the keywords that come to mind by hand.</span>
       </div>
       
       <div className="images-container">

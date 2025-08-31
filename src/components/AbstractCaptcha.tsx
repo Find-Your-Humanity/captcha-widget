@@ -149,7 +149,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">{question}{ttl > 0 ? ` · ${ttl}s` : ''}</span>
+        <span className="header-text">{question}</span>
       </div>
 
       {error && (

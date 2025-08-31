@@ -129,7 +129,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">Select all images with a bike{ttl > 0 ? ` · ${ttl}s` : ''}.</span>
+        <span className="header-text">Select all images with a bike.</span>
       </div>
       
       <div className="image-grid">
