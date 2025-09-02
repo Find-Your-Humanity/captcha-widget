@@ -126,7 +126,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     fetchChallenge();
   };
 
-  // 1장의 이미지를 9개 영역으로 나누어 사용
+  // 오버레이 그리드 정의 (3×3 인덱싱)
   const images: ImageItem[] = [
     // 첫 번째 행
     { id: 1, hasBike: false, selected: false, gridPosition: { row: 1, col: 1 } },
@@ -156,36 +156,29 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         <span className="header-text">Select all images with a bike.</span>
       </div>
       
-      <div className="image-grid">
-        {images.map((image) => (
-          <div
-            key={image.id}
-            className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-            onClick={(e) => handleImageClick(image.id, e.nativeEvent)}
-            onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
-            onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
-          >
-            <div 
-              className="image-placeholder"
-              style={{
-                backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
-                backgroundPosition: `${(image.gridPosition.col - 1) * 33.33}% ${(image.gridPosition.row - 1) * 33.33}%`,
-                backgroundSize: '300% 300%'
-              }}
+      <div className="image-stage">
+        {imageUrl && (
+          <img className="base-image" src={imageUrl} alt="captcha" draggable={false} />
+        )}
+        <div className="overlay-grid">
+          {images.map((image) => (
+            <div
+              key={image.id}
+              className={`overlay-cell ${selectedImages.includes(image.id) ? 'selected' : ''}`}
+              onClick={(e) => handleImageClick(image.id, e.nativeEvent)}
+              onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
+              onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
             >
               {selectedImages.includes(image.id) && (
                 <div className="selection-overlay">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-                      fill="#ffffff"
-                    />
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="#ffffff" />
                   </svg>
                 </div>
               )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       
       <div className="captcha-controls">

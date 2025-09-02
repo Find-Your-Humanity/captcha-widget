@@ -21,12 +21,47 @@
   display: block;
 }
 
-.image-grid {
+.image-stage {
+  position: relative;
+  width: 100%;
+  /* 정사각 타일 그리드를 위해 비율을 1:1로 고정. 필요 시 natural ratio로 변경 가능 */
+  aspect-ratio: 1;
+  background-color: #e0e0e0;
+}
+
+.base-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.overlay-grid {
+  position: absolute;
+  inset: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2.5px;
-  background-color: #e0e0e0;
-  padding: 2.5px;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0;
+  pointer-events: none; /* 셀에서 다시 활성화 */
+}
+
+.overlay-cell {
+  position: relative;
+  pointer-events: auto;
+  background-clip: padding-box;
+}
+
+/* 시각적 그리드 라인 */
+.overlay-grid {
+  outline: 2.5px solid #e0e0e0;
+}
+.overlay-cell {
+  box-shadow: inset 0 0 0 1.25px #e0e0e0;
 }
 
 .image-item {
@@ -44,20 +79,11 @@
   background-color: #f8f9fa;
 }
 
-.image-item.selected {
+.overlay-cell.selected {
   background-color: #e3f2fd;
 }
 
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background-repeat: no-repeat;
-  background-size: 300% 300%;
-}
+.image-placeholder { display: none; }
 
 .selection-overlay {
   position: absolute;
