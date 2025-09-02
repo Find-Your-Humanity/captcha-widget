@@ -60,7 +60,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       setLoading(true);
              const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
          (process.env.NODE_ENV === 'production' 
-           ? 'https://gateway.realcatcha.com'
+           ? 'https://api.realcatcha.com'
            : 'http://localhost:8000');
              const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { 
          method: 'POST', 
@@ -193,7 +193,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     try {
              const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
          (process.env.NODE_ENV === 'production' 
-           ? 'https://gateway.realcatcha.com'
+           ? 'https://api.realcatcha.com'
            : 'http://localhost:8000');
 
       // 캔버스 이미지를 Base64 데이터 URL로 추출

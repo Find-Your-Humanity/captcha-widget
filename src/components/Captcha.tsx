@@ -45,7 +45,7 @@ const Captcha: React.FC<CaptchaProps> = ({
   theme = 'light', 
   size = 'normal', 
   language = 'ko',
-  apiEndpoint = 'https://gateway.realcatcha.com',
+          apiEndpoint = 'https://api.realcatcha.com',
   onComplete 
 }) => {
   const [state, setState] = useState<CaptchaState>('initial');
@@ -255,7 +255,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       }
 
       // props에서 받은 API 엔드포인트 사용
-      const apiBaseUrl = apiEndpoint || 'https://gateway.realcatcha.com';
+      const apiBaseUrl = apiEndpoint || 'https://api.realcatcha.com';
       console.log('🌐 API 엔드포인트:', apiBaseUrl);
       console.log('🔑 API 키:', siteKey ? '제공됨' : '없음');
       console.log('🔗 API URL:', `${apiBaseUrl}/api/next-captcha`);
