@@ -58,11 +58,17 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const refreshSamples = async () => {
     try {
       setLoading(true);
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
-        (process.env.NODE_ENV === 'production' 
-          ? 'https://api.realcatcha.com'
-          : 'http://localhost:8000');
-      const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+         (process.env.NODE_ENV === 'production' 
+           ? 'https://gateway.realcatcha.com'
+           : 'http://localhost:8000');
+             const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { 
+         method: 'POST', 
+         headers: { 
+           'Content-Type': 'application/json',
+           'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'
+         } 
+       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { samples?: string[]; ttl?: number } = await resp.json();
       // 새 샘플로 교체
@@ -185,10 +191,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     }
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
-        (process.env.NODE_ENV === 'production' 
-          ? 'https://captcha-api.realcatcha.com'
-          : 'http://localhost:8000');
+             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+         (process.env.NODE_ENV === 'production' 
+           ? 'https://gateway.realcatcha.com'
+           : 'http://localhost:8000');
 
       // 캔버스 이미지를 Base64 데이터 URL로 추출
       const imageDataUrl = canvas.toDataURL('image/png');
