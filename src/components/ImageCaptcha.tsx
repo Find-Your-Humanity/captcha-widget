@@ -8,7 +8,6 @@ interface ImageCaptchaProps {
 
 interface ImageItem {
   id: number;
-  hasBike: boolean;
   selected: boolean;
   gridPosition: {
     row: number;
@@ -22,6 +21,8 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [challengeId, setChallengeId] = useState<string>('');
+  const [question, setQuestion] = useState<string>('');
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
   const ttlExpiredRef = useRef(false);
@@ -40,11 +41,13 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
       const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-challenge`, { method: 'POST' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data: { url?: string; ttl?: number } = await resp.json();
+      const data: { challenge_id?: string; url?: string; ttl?: number; question?: string } = await resp.json();
+      setChallengeId(data.challenge_id || '');
       setImageUrl(data.url || '');
       if (typeof data.ttl === 'number' && data.ttl > 0) {
         setTtl(data.ttl);
       }
+      setQuestion(data.question || '');
       setSelectedImages([]);
       setIsVerified(false);
     } catch (e) {
@@ -85,7 +88,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     behaviorCollector.current.trackImageClick(imageId, event);
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (isTestMode) {
       // 테스트 모드: 정답 여부와 무관하게 다음 단계로 진행
       behaviorCollector.current.trackVerifyAttempt(true);
@@ -93,29 +96,28 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       setTimeout(() => onSuccess?.(), 300);
       return;
     }
-    const selectedBikeImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image?.hasBike;
-    });
-
-    const selectedNonBikeImages = selectedImages.filter(id => {
-      const image = images.find(img => img.id === id);
-      return image && !image.hasBike;
-    });
-
-    const isCorrect = selectedBikeImages.length === 3 && selectedNonBikeImages.length === 0;
-    
-    // 행동 데이터 기록
-    behaviorCollector.current.trackVerifyAttempt(isCorrect);
-
-    if (isCorrect) {
-      setIsVerified(true);
-      setTimeout(() => {
-        console.log('Image captcha verified successfully!');
-        onSuccess?.();
-      }, 1000);
-    } else {
-      setSelectedImages([]);
+    if (!challengeId) return;
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
+      const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge_id: challengeId, selections: selectedImages })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data: { success?: boolean; attempts?: number; downshift?: boolean } = await resp.json();
+      const ok = !!data.success;
+      behaviorCollector.current.trackVerifyAttempt(ok);
+      if (ok) {
+        setIsVerified(true);
+        setTimeout(() => onSuccess?.(), 300);
+      } else {
+        alert('정답이 아닙니다. 다시 시도해주세요.');
+        setSelectedImages([]);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('검증 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -129,17 +131,17 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   // 오버레이 그리드 정의 (3×3 인덱싱)
   const images: ImageItem[] = [
     // 첫 번째 행
-    { id: 1, hasBike: false, selected: false, gridPosition: { row: 1, col: 1 } },
-    { id: 2, hasBike: false, selected: false, gridPosition: { row: 1, col: 2 } },
-    { id: 3, hasBike: true, selected: false, gridPosition: { row: 1, col: 3 } },
+    { id: 1, selected: false, gridPosition: { row: 1, col: 1 } },
+    { id: 2, selected: false, gridPosition: { row: 1, col: 2 } },
+    { id: 3, selected: false, gridPosition: { row: 1, col: 3 } },
     // 두 번째 행
-    { id: 4, hasBike: false, selected: false, gridPosition: { row: 2, col: 1 } },
-    { id: 5, hasBike: false, selected: false, gridPosition: { row: 2, col: 2 } },
-    { id: 6, hasBike: true, selected: false, gridPosition: { row: 2, col: 3 } },
+    { id: 4, selected: false, gridPosition: { row: 2, col: 1 } },
+    { id: 5, selected: false, gridPosition: { row: 2, col: 2 } },
+    { id: 6, selected: false, gridPosition: { row: 2, col: 3 } },
     // 세 번째 행
-    { id: 7, hasBike: false, selected: false, gridPosition: { row: 3, col: 1 } },
-    { id: 8, hasBike: false, selected: false, gridPosition: { row: 3, col: 2 } },
-    { id: 9, hasBike: true, selected: false, gridPosition: { row: 3, col: 3 } },
+    { id: 7, selected: false, gridPosition: { row: 3, col: 1 } },
+    { id: 8, selected: false, gridPosition: { row: 3, col: 2 } },
+    { id: 9, selected: false, gridPosition: { row: 3, col: 3 } },
   ];
 
   return (
@@ -153,7 +155,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">Select all images with a bike.</span>
+        <span className="header-text">{question || 'Select all matching images.'}</span>
       </div>
       
       <div className="image-stage">
@@ -208,9 +210,9 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         </div>
         
         <button 
-          className={`verify-button ${(isTestMode || selectedImages.length > 0) ? 'active' : ''}`}
+          className={`verify-button ${(isTestMode || (selectedImages.length > 0 && !!challengeId)) ? 'active' : ''}`}
           onClick={handleVerify}
-          disabled={!isTestMode && selectedImages.length === 0}
+          disabled={!isTestMode && (selectedImages.length === 0 || !challengeId)}
         >
           VERIFY
         </button>
