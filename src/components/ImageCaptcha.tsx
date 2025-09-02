@@ -20,16 +20,39 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
   const ttlExpiredRef = useRef(false);
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
+    fetchChallenge();
     return () => {
       behaviorCollector.current.stopTracking();
     };
   }, []);
+
+  const fetchChallenge = async () => {
+    try {
+      setLoading(true);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
+      const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-challenge`, { method: 'POST' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data: { url?: string; ttl?: number } = await resp.json();
+      setImageUrl(data.url || '');
+      if (typeof data.ttl === 'number' && data.ttl > 0) {
+        setTtl(data.ttl);
+      }
+      setSelectedImages([]);
+      setIsVerified(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // TTL 카운트다운
   useEffect(() => {
@@ -44,7 +67,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       if (ttlExpiredRef.current) return;
       ttlExpiredRef.current = true;
       handleRefresh();
-      setTtl(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+      // TTL은 서버가 내려준 값으로 fetchChallenge 과정에서 재설정됨
     } else if (ttl > 0) {
       ttlExpiredRef.current = false;
     }
@@ -100,6 +123,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     setSelectedImages([]);
     setIsVerified(false);
     behaviorCollector.current.trackRefresh();
+    fetchChallenge();
   };
 
   // 1장의 이미지를 9개 영역으로 나누어 사용
@@ -144,7 +168,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
             <div 
               className="image-placeholder"
               style={{
-                backgroundImage: 'url(https://picsum.photos/450/450?random=bike)',
+                backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
                 backgroundPosition: `${(image.gridPosition.col - 1) * 33.33}% ${(image.gridPosition.row - 1) * 33.33}%`,
                 backgroundSize: '300% 300%'
               }}
