@@ -11,7 +11,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const [drawingHistory, setDrawingHistory] = useState<ImageData[]>([]);
+  const [images, setImages] = useState<{ id: number; src: string; alt: string }[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
@@ -19,8 +21,11 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const ttlExpiredRef = useRef(false);
 
-  // 백엔드에서 전달된 샘플 URL만 사용 (폴백 제거)
-  const images = (samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
+  // 샘플이 변경되면 이미지 상태 초기화
+  useEffect(() => {
+    const initial = (samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
+    setImages(initial);
+  }, [samples]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,6 +54,31 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     };
   }, []);
 
+  // 샘플 이미지 새로고침 함수
+  const refreshSamples = async () => {
+    try {
+      setLoading(true);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://api.realcatcha.com'
+          : 'http://localhost:8000');
+      const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data: { samples?: string[]; ttl?: number } = await resp.json();
+      // 새 샘플로 교체
+      const imgs = (data.samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
+      setImages(imgs);
+      // TTL 갱신 (옵션)
+      if (typeof data.ttl === 'number' && data.ttl > 0) {
+        setTtl(data.ttl);
+      }
+    } catch (e) {
+      console.error('failed to refresh handwriting samples', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // TTL 카운트다운
   useEffect(() => {
     if (ttl <= 0) return;
@@ -56,14 +86,13 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     return () => clearInterval(timer);
   }, [ttl]);
 
-  // TTL 만료 시 자동 리셋
+  // TTL 만료 시 자동 리셋(페이지 리로드 대신 샘플/캔버스만 갱신)
   useEffect(() => {
     if (ttl === 0) {
       if (ttlExpiredRef.current) return;
       ttlExpiredRef.current = true;
       clearCanvas();
-      setKeywords('');
-      setTtl(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+      refreshSamples();
     } else if (ttl > 0) {
       ttlExpiredRef.current = false;
     }
@@ -193,10 +222,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       } else {
         behaviorCollector.current.setVerificationResult(false);
         alert('정답이 아닙니다. 다시 시도해주세요.');
-        // 확인 클릭 후 새로고침
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
+        // 전체 페이지 이동 대신 샘플과 캔버스만 재로딩
+        clearCanvas();
+        refreshSamples();
       }
     } catch (error) {
       console.error('Handwriting verify error:', error);
@@ -207,6 +235,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const handleRefresh = () => {
     clearCanvas();
     setKeywords('');
+    refreshSamples();
   };
 
   return (
@@ -238,7 +267,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       
       <div className="captcha-controls">
         <div className="control-left">
-          <button className="control-button" onClick={handleRefresh}>
+          <button className="control-button" onClick={handleRefresh} disabled={loading}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
                 d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
