@@ -4,9 +4,10 @@ import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 
 interface HandwritingCaptchaProps {
   onSuccess?: () => void;
+  samples?: string[];
 }
 
-const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) => {
+const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
@@ -15,15 +16,11 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+  const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+  const ttlExpiredRef = useRef(false);
 
-  // 이미지 데이터 (4~8.jpg 사용)
-  const images = [
-    { id: 1, src: '/4.jpg', alt: 'Kingfisher bird' },
-    { id: 2, src: '/5.jpg', alt: 'Mountain landscape' },
-    { id: 3, src: '/6.jpg', alt: 'Person on bicycle' },
-    { id: 4, src: '/7.jpg', alt: 'Kingfisher bird duplicate' },
-    { id: 5, src: '/8.jpg', alt: 'Mountain landscape duplicate' },
-  ];
+  // 백엔드에서 전달된 샘플 URL만 사용 (폴백 제거)
+  const images = (samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,6 +48,26 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
       behaviorCollector.current.stopTracking();
     };
   }, []);
+
+  // TTL 카운트다운
+  useEffect(() => {
+    if (ttl <= 0) return;
+    const timer = setInterval(() => setTtl((t) => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(timer);
+  }, [ttl]);
+
+  // TTL 만료 시 자동 리셋
+  useEffect(() => {
+    if (ttl === 0) {
+      if (ttlExpiredRef.current) return;
+      ttlExpiredRef.current = true;
+      clearCanvas();
+      setKeywords('');
+      setTtl(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
+    } else if (ttl > 0) {
+      ttlExpiredRef.current = false;
+    }
+  }, [ttl]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -141,7 +158,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
         (process.env.NODE_ENV === 'production' 
-          ? 'https://api.realcatcha.com'
+          ? 'https://captcha-api.realcatcha.com'
           : 'http://localhost:8000');
 
       // 캔버스 이미지를 Base64 데이터 URL로 추출
@@ -149,7 +166,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess }) =>
 
       const response = await fetch(`${apiBaseUrl}/api/verify-handwriting`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키를 헤더로 전송
+        },
         body: JSON.stringify({
           image_base64: imageDataUrl,
           // 선택: 추가 컨텍스트 전송 가능

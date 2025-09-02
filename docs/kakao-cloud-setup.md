@@ -93,7 +93,7 @@ Kakao Cloud Object Storage
 2. **디스트리뷔션 생성** 클릭
 3. 기본 설정:
    - **원본 서버**: Object Storage 버킷
-   - **도메인**: `cdn.realcaptcha.com`
+   - **도메인**: `1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com`
    - **프로토콜**: HTTPS
 
 ### 3.2 캐싱 설정
@@ -113,10 +113,10 @@ Kakao Cloud Object Storage
 ## 🔑 4단계: 도메인 및 SSL 설정
 
 ### 4.1 도메인 등록
-1. **도메인 추가**: `cdn.realcaptcha.com`
+1. **도메인 추가**: `1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com`
 2. **DNS 설정**:
 ```
-cdn.realcaptcha.com. CNAME your-distribution.kr-central-1.kakaoi.io.
+1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com. CNAME your-distribution.kr-central-1.kakaoi.io.
 ```
 
 ### 4.2 SSL 인증서
@@ -195,7 +195,7 @@ npm run deploy:kakao
 
 ---
 
-## 🔗 7단계: 사용법
+## 🔗 7단계: 사용법b
 
 ### 7.1 기본 HTML 사용
 ```html

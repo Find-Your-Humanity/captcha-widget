@@ -1,0 +1,20 @@
+{
+  "name": "Real Captcha Widget",
+  "version": "1.0.0",
+  "buildTime": "2025-09-01T02:31:28.666Z",
+  "size": 56806,
+  "sizeFormatted": "55.47 KB",
+  "files": {
+    "main": "realcaptcha-widget.min.js",
+    "example": "example.html"
+  },
+  "cdn": {
+    "recommended": {
+      "react": "https://unpkg.com/react@18/umd/react.production.min.js",
+      "reactDom": "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    }
+  },
+  "usage": {
+    "basic": "renderRealCaptcha(\"container-id\", options, callback)",
+    "advanced": "new RealCaptcha(options).render(\"container-id\", callback)"
+  }

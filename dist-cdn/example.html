@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Captcha Widget 예제</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .example {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .captcha-container {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real Captcha Widget CDN 예제</h1>
+    
+    <div class="example">
+        <h2>기본 사용법</h2>
+        <div id="captcha1" class="captcha-container"></div>
+        <button onclick="resetCaptcha1()">리셋</button>
+    </div>
+    
+    <div class="example">
+        <h2>커스텀 옵션</h2>
+        <div id="captcha2" class="captcha-container"></div>
+        <button onclick="resetCaptcha2()">리셋</button>
+    </div>
+    
+    <!-- React 및 ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Real Captcha Widget -->
+    <script src="./realcaptcha-widget.min.js"></script>
+    
+    <script>
+        let captcha1Instance;
+        let captcha2Instance;
+        
+        // 기본 예제
+        captcha1Instance = renderRealCaptcha('captcha1', {
+            theme: 'light',
+            size: 'normal'
+        }, function(result) {
+            console.log('캡차 1 결과:', result);
+            alert('캡차 완료: ' + (result.success ? '성공' : '실패'));
+        });
+        
+        // 커스텀 옵션 예제
+        captcha2Instance = renderRealCaptcha('captcha2', {
+            theme: 'dark',
+            size: 'compact',
+            language: 'ko'
+        }, function(result) {
+            console.log('캡차 2 결과:', result);
+            alert('캡차 완료: ' + (result.success ? '성공' : '실패'));
+        });
+        
+        function resetCaptcha1() {
+            if (captcha1Instance) {
+                captcha1Instance.reset();
+            }
+        }
+        
+        function resetCaptcha2() {
+            if (captcha2Instance) {
+                captcha2Instance.reset();
+            }
+        }
+    </script>
+</body>
+</html>

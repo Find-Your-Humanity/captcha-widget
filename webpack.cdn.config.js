@@ -1,5 +1,6 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'production',
@@ -13,7 +14,19 @@ module.exports = {
     clean: true
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js', '.jsx']
+    extensions: ['.tsx', '.ts', '.js', '.jsx'],
+    fallback: {
+      "process": require.resolve("process/browser"),
+      "buffer": require.resolve("buffer"),
+      "util": require.resolve("util"),
+      "stream": require.resolve("stream-browserify"),
+      "crypto": require.resolve("crypto-browserify"),
+      "path": require.resolve("path-browserify"),
+      "os": require.resolve("os-browserify/browser"),
+      "fs": false,
+      "net": false,
+      "tls": false
+    }
   },
   module: {
     rules: [
@@ -32,6 +45,22 @@ module.exports = {
       }
     ]
   },
+  plugins: [
+    // Node.js 전역 변수들을 브라우저 환경에 맞게 처리
+    new webpack.DefinePlugin({
+      'process.env': JSON.stringify({
+        NODE_ENV: 'production',
+        REACT_APP_TEST_MODE: 'false',
+        REACT_APP_API_BASE_URL: 'https://api.realcatcha.com',
+        REACT_APP_SUCCESS_REDIRECT_URL: ''
+      }),
+      'process.env.NODE_ENV': JSON.stringify('production')
+    }),
+    // Node.js 전역 변수들을 브라우저에서 사용할 수 있도록 폴리필 제공
+    new webpack.ProvidePlugin({
+      process: 'process/browser'
+    })
+  ],
   optimization: {
     minimize: true,
     minimizer: [

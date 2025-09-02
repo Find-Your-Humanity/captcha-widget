@@ -5,14 +5,18 @@
 ## 🎉 최종 결과
 
 ### CDN URLs
-- **최신 버전**: `https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js`
-- **고정 버전**: `https://cdn.realcaptcha.com/v1.0.0/realcaptcha-widget.min.js`
-- **사용 예제**: `https://cdn.realcaptcha.com/v1.0.0/example.html`
+- **최신 버전**: `https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js`
+- **고정 버전**: `https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/v1.0.0/realcaptcha-widget.min.js`
+- **사용 예제**: `https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/v1.0.0/example.html`
 
 ### 🚀 빠른 시작 (카카오클라우드)
 ```powershell
 # 1. 환경 설정
 copy env-template-kakao.txt .env
+
+
+
+
 notepad .env  # KAKAO_ACCESS_KEY, KAKAO_SECRET_KEY 입력
 
 # 2. 자동 배포
@@ -32,7 +36,7 @@ notepad .env  # KAKAO_ACCESS_KEY, KAKAO_SECRET_KEY 입력
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
     <!-- 카카오클라우드 CDN -->
-    <script src="https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js"></script>
+    <script src="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js"></script>
     
     <div id="captcha-container"></div>
     

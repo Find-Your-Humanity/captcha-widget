@@ -18,6 +18,15 @@ interface BehaviorData {
   };
 }
 
+interface CaptchaProps {
+  siteKey?: string; // API 키
+  theme?: 'light' | 'dark';
+  size?: 'normal' | 'compact';
+  language?: 'ko' | 'en';
+  apiEndpoint?: string;
+  onComplete?: (result: any) => void;
+}
+
 type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'abstract-captcha' | 'handwriting-captcha';
 
 // 세션 시퀀스 관리를 위한 로컬 스토리지 키
@@ -31,7 +40,14 @@ const getNextSequence = (): number => {
   return nextSequence;
 };
 
-const Captcha: React.FC = () => {
+const Captcha: React.FC<CaptchaProps> = ({ 
+  siteKey = '', 
+  theme = 'light', 
+  size = 'normal', 
+  language = 'ko',
+  apiEndpoint = 'https://gateway.realcatcha.com',
+  onComplete 
+}) => {
   const [state, setState] = useState<CaptchaState>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [captchaCount, setCaptchaCount] = useState<number>(0);
@@ -237,16 +253,19 @@ const Captcha: React.FC = () => {
         return;
       }
 
-      // 환경변수를 사용한 안전한 API URL 설정
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
-        (process.env.NODE_ENV === 'production' 
-          ? 'https://api.realcatcha.com'  // 프로덕션: 기본 도메인 사용
-          : 'http://localhost:8000');     // 개발: localhost 사용
-      console.log('🌐 현재 환경:', process.env.NODE_ENV);
+      // props에서 받은 API 엔드포인트 사용
+      const apiBaseUrl = apiEndpoint || 'https://gateway.realcatcha.com';
+      console.log('🌐 API 엔드포인트:', apiBaseUrl);
+      console.log('🔑 API 키:', siteKey ? '제공됨' : '없음');
       console.log('🔗 API URL:', `${apiBaseUrl}/api/next-captcha`);
+      
       const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const bd = behaviorDataRef.current;
-      const payload = { behavior_data: bd };
+      const payload = { 
+        behavior_data: bd,
+        site_key: siteKey // API 키 포함
+      };
+      
       try {
         const mm = (bd?.mouseMovements || []).length;
         const mc = (bd?.mouseClicks || []).length;
@@ -262,7 +281,10 @@ const Captcha: React.FC = () => {
 
       const response = await fetch(`${apiBaseUrl}/api/next-captcha`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': siteKey // API 키 헤더 추가
+        },
         body: JSON.stringify(payload)
       });
 

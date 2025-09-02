@@ -13,7 +13,7 @@
 - Windows PowerShell 자동 배포 스크립트
 
 ### 🎉 최종 결과
-- **CDN URL**: `https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js`
+- **CDN URL**: `https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js`
 - **버전 관리**: `v1.0.0` 형태의 고정 버전 지원
 - **전역 배포**: 카카오클라우드 글로벌 CDN (한국 최적화)
 - **자동 배포**: GitHub Actions + PowerShell CI/CD 파이프라인
@@ -132,7 +132,7 @@ Get-ChildItem dist-cdn\
 cat dist-cdn\deploy-log.json | ConvertFrom-Json
 
 # CDN URL 테스트
-Invoke-WebRequest -Uri "https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js" -Method Head
+Invoke-WebRequest -Uri "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js" -Method Head
 ```
 
 ## 📊 성능 모니터링
@@ -166,7 +166,7 @@ start examples\integration-examples.html
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
     <!-- Real Captcha Widget -->
-    <script src="https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js"></script>
+    <script src="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js"></script>
     
     <div id="captcha-container"></div>
     
@@ -190,7 +190,7 @@ start examples\integration-examples.html
 // functions.php
 function realcaptcha_enqueue_scripts() {
     wp_enqueue_script('realcaptcha', 
-        'https://cdn.realcaptcha.com/latest/realcaptcha-widget.min.js', 
+        'https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js', 
         array('react', 'react-dom'), '1.0.0', true);
 }
 add_action('wp_enqueue_scripts', 'realcaptcha_enqueue_scripts');

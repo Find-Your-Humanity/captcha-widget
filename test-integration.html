@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealCaptcha 통합 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .api-key-section {
+            background: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .api-key-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .captcha-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            min-height: 200px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 RealCaptcha 통합 테스트</h1>
+        
+        <div class="info-box">
+            <h3>📋 테스트 가이드</h3>
+            <ol>
+                <li>API 키를 입력하세요 (테스트용: <code>rc_live_f49a055d62283fd02e8203ccaba70fc2</code>)</li>
+                <li>"API 키 검증" 버튼으로 키가 유효한지 확인하세요</li>
+                <li>"캡차 시작" 버튼으로 필기 캡차를 테스트하세요</li>
+                <li>결과를 확인하고 문제가 있으면 개발팀에 문의하세요</li>
+            </ol>
+        </div>
+
+        <div class="api-key-section">
+            <h3>🔑 API 키 설정</h3>
+            <input type="text" id="apiKey" class="api-key-input" 
+                   placeholder="API 키를 입력하세요" 
+                   value="rc_live_f49a055d62283fd02e8203ccaba70fc2">
+            <br>
+            <button class="test-button" onclick="testApiKey()">API 키 검증</button>
+        </div>
+
+        <div class="api-key-section">
+            <h3>🧪 캡차 테스트</h3>
+            <button class="test-button" onclick="startHandwritingCaptcha()">필기 캡차 시작</button>
+            <button class="test-button" onclick="startImageCaptcha()">이미지 캡차 시작</button>
+            <button class="test-button" onclick="startAbstractCaptcha()">추상 캡차 시작</button>
+        </div>
+
+        <div id="captchaContainer" class="captcha-container" style="display: none;">
+            <h3>🎯 캡차 영역</h3>
+            <div id="captchaWidget"></div>
+        </div>
+
+        <div id="resultSection" class="result-section" style="display: none;">
+            <h3>📊 테스트 결과</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://captcha-api.realcatcha.com';
+        const WIDGET_URL = 'https://captcha-frontend.realcatcha.com';
+
+        // API 키 검증
+        async function testApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showResult('API 키를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/verify-api-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ API 키 검증 성공!\n\n사용자: ${result.key_name}\n상태: ${result.status}\n사용량: ${result.usage_count}/${result.limit}`, 'success');
+                } else {
+                    showResult(`❌ API 키 검증 실패: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 네트워크 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 필기 캡차 시작
+        async function startHandwritingCaptcha() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showResult('API 키를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                // 1. 캡차 시작 요청
+                const response = await fetch(`${API_BASE_URL}/api/next-captcha`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        captcha_type: 'handwriting',
+                        behavior_data: {
+                            mouse_movement: generateMockBehaviorData(),
+                            click_patterns: generateMockBehaviorData(),
+                            timing_patterns: generateMockBehaviorData()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 필기 캡차 시작 성공!\n\n세션 ID: ${result.session_id}\n이미지 개수: ${result.samples?.length || 0}`, 'success');
+                    
+                    // 2. 위젯 로드
+                    loadCaptchaWidget('handwriting', result.samples);
+                } else {
+                    showResult(`❌ 캡차 시작 실패: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 네트워크 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 이미지 캡차 시작
+        async function startImageCaptcha() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showResult('API 키를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/next-captcha`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        captcha_type: 'image',
+                        behavior_data: {
+                            mouse_movement: generateMockBehaviorData(),
+                            click_patterns: generateMockBehaviorData(),
+                            timing_patterns: generateMockBehaviorData()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 이미지 캡차 시작 성공!\n\n세션 ID: ${result.session_id}\n이미지 개수: ${result.samples?.length || 0}`, 'success');
+                    loadCaptchaWidget('image', result.samples);
+                } else {
+                    showResult(`❌ 캡차 시작 실패: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 네트워크 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 추상 캡차 시작
+        async function startAbstractCaptcha() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showResult('API 키를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/next-captcha`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        captcha_type: 'abstract',
+                        behavior_data: {
+                            mouse_movement: generateMockBehaviorData(),
+                            click_patterns: generateMockBehaviorData(),
+                            timing_patterns: generateMockBehaviorData()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 추상 캡차 시작 성공!\n\n세션 ID: ${result.session_id}\n이미지 개수: ${result.samples?.length || 0}`, 'success');
+                    loadCaptchaWidget('abstract', result.samples);
+                } else {
+                    showResult(`❌ 캡차 시작 실패: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 네트워크 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 위젯 로드
+        function loadCaptchaWidget(type, samples) {
+            const container = document.getElementById('captchaContainer');
+            const widgetDiv = document.getElementById('captchaWidget');
+            
+            container.style.display = 'block';
+            widgetDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <h4>🎯 ${type.toUpperCase()} 캡차 위젯</h4>
+                    <p>위젯이 로드되는 중입니다...</p>
+                    <p><strong>이미지 URL:</strong></p>
+                    <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                        ${samples?.map(url => `<li style="word-break: break-all; font-size: 12px;">${url}</li>`).join('') || '<li>이미지 없음</li>'}
+                    </ul>
+                </div>
+            `;
+
+            // 실제 위젯 로드 (iframe 방식)
+            const iframe = document.createElement('iframe');
+            iframe.src = `${WIDGET_URL}?type=${type}&samples=${encodeURIComponent(JSON.stringify(samples))}`;
+            iframe.style.width = '100%';
+            iframe.style.height = '400px';
+            iframe.style.border = 'none';
+            iframe.style.borderRadius = '8px';
+            
+            widgetDiv.appendChild(iframe);
+        }
+
+        // 결과 표시
+        function showResult(message, type = 'info') {
+            const resultSection = document.getElementById('resultSection');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultSection.style.display = 'block';
+            resultSection.className = `result-section ${type}`;
+            resultContent.textContent = message;
+        }
+
+        // Mock 행동 데이터 생성
+        function generateMockBehaviorData() {
+            return {
+                timestamp: Date.now(),
+                coordinates: [
+                    { x: Math.random() * 100, y: Math.random() * 100, t: Date.now() },
+                    { x: Math.random() * 100, y: Math.random() * 100, t: Date.now() + 100 },
+                    { x: Math.random() * 100, y: Math.random() * 100, t: Date.now() + 200 }
+                ],
+                velocity: Math.random() * 10,
+                acceleration: Math.random() * 5
+            };
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('RealCaptcha 통합 테스트 페이지가 로드되었습니다.');
+            console.log('API Base URL:', API_BASE_URL);
+            console.log('Widget URL:', WIDGET_URL);
+        });
+    </script>
+</body>
+</html>
