@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<!-- React 및 ReactDOM CDN -->
+	<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+	<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+	<!-- Real Captcha Widget -->
+	<script src="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/latest/realcaptcha-widget.min.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>THE DRAW - 한정판 스니커즈 추첨</title>
+	<meta name="description" content="가장 희귀하고 인기 있는 한정판 스니커즈를 만날 수 있는 기회. THE DRAW에서 진행되는 특별한 추첨에 지금 바로 응모하세요. 공정한 추첨을 위해 AI 캡차 시스템이 함께합니다.">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						primary: '#3B82F6',
+						secondary: '#1F2937',
+						accent: '#10B981',
+						dark: '#111827'
+					},
+					animation: {
+						'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+						'float': 'float 3s ease-in-out infinite',
+					},
+					keyframes: {
+						float: {
+							'0%, 100%': { transform: 'translateY(0)' },
+							'50%': { transform: 'translateY(-10px)' },
+						}
+					}
+				}
+			}
+		}
+	</script>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+			scroll-behavior: smooth;
+		}
+
+		.sneaker-shadow {
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		}
+
+		.countdown-digit {
+			background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
+			box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff;
+		}
+
+		.draw-card {
+			transition: all 0.3s ease;
+		}
+
+		.draw-card:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		}
+
+		.step-card {
+			border-top: 4px solid #3B82F6;
+		}
+
+		.ai-shield {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		}
+
+		input:focus {
+			outline: none;
+			box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+		}
+	</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+<!-- Header -->
+<header class="bg-white shadow-md sticky top-0 z-50">
+	<div class="container mx-auto px-4 py-4 flex justify-between items-center">
+		<div class="flex items-center space-x-2">
+			<span class="text-2xl">👟</span>
+			<h1 class="text-xl font-bold">THE DRAW</h1>
+			<span class="hidden md:inline-block text-sm text-gray-500 ml-2">Just for the Lucky one</span>
+		</div>
+
+		<nav class="hidden md:flex space-x-8">
+			<a href="#current-draw" class="hover:text-primary font-medium transition-colors">진행중인 추첨</a>
+			<a href="#how-to-enter" class="hover:text-primary font-medium transition-colors">응모 방법</a>
+			<a href="#" class="hover:text-primary font-medium transition-colors">내 응모내역</a>
+		</nav>
+
+		<button class="md:hidden text-gray-600">
+			<i class="fas fa-bars text-xl"></i>
+		</button>
+	</div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-r from-gray-900 to-gray-800 text-white overflow-hidden">
+	<div class="absolute inset-0 z-0">
+		<img src="https://images.unsplash.com/photo-1516478177764-9fe567e9777f?q=80&w=2070&auto=format&fit=crop"
+		     alt="Air Jordan 1 Retro High Origin Story" class="w-full h-full object-cover opacity-40">
+	</div>
+
+	<div class="container mx-auto px-4 py-24 md:py-32 relative z-10">
+		<div class="max-w-2xl">
+			<h1 class="text-4xl md:text-5xl font-bold mb-4 animate-float">Air Jordan 1 Retro High 'Origin Story'</h1>
+			<p class="text-xl md:text-2xl mb-8 text-gray-200">전설의 시작, 그 첫 번째 이야기를 당신의 컬렉션에 더할 단 한 번의 기회. 지금 바로 THE DRAW에서 응모하세요.</p>
+			<a href="#current-draw" class="inline-block bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105">
+				지금 응모하기
+			</a>
+		</div>
+	</div>
+</section>
+
+<!-- Current Draw Section -->
+<section id="current-draw" class="py-16 bg-white">
+	<div class="container mx-auto px-4">
+		<div class="text-center mb-12">
+			<h2 class="text-3xl md:text-4xl font-bold mb-4">진행중인 추첨 (LIVE DRAW)</h2>
+			<p class="text-xl text-gray-600 mb-2">응모 마감까지 남은 시간:</p>
+
+			<div class="flex justify-center items-center space-x-4 mb-8">
+				<div class="countdown-digit w-16 h-16 rounded-lg flex flex-col items-center justify-center">
+					<span id="countdown-hours" class="text-2xl font-bold">00</span>
+					<span class="text-xs text-gray-500">시간</span>
+				</div>
+				<span class="text-2xl font-bold">:</span>
+				<div class="countdown-digit w-16 h-16 rounded-lg flex flex-col items-center justify-center">
+					<span id="countdown-minutes" class="text-2xl font-bold">12</span>
+					<span class="text-xs text-gray-500">분</span>
+				</div>
+				<span class="text-2xl font-bold">:</span>
+				<div class="countdown-digit w-16 h-16 rounded-lg flex flex-col items-center justify-center">
+					<span id="countdown-seconds" class="text-2xl font-bold">45</span>
+					<span class="text-xs text-gray-500">초</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+			<!-- Sneaker Info -->
+			<div class="lg:col-span-7 draw-card bg-white rounded-2xl sneaker-shadow overflow-hidden">
+				<div class="h-64 md:h-80 overflow-hidden">
+					<img src="https://images.unsplash.com/photo-1608231387042-89d0672c726b?q=80&w=1974&auto=format&fit=crop"
+					     alt="추첨 대상인 한정판 스니커즈 이미지" class="w-full h-full object-cover">
+				</div>
+				<div class="p-6 md:p-8">
+					<h3 class="text-2xl md:text-3xl font-bold mb-4">Air Jordan 1 Retro High 'Origin Story'</h3>
+					<div class="space-y-3">
+						<div class="flex">
+							<span class="font-medium w-32">모델 번호:</span>
+							<span>555088-602</span>
+						</div>
+						<div class="flex">
+							<span class="font-medium w-32">출시일:</span>
+							<span>2024-09-15</span>
+						</div>
+						<div class="flex">
+							<span class="font-medium w-32">응모 기간:</span>
+							<span>2024-09-15 10:00 ~ 11:00 (1시간)</span>
+						</div>
+						<div class="flex">
+							<span class="font-medium w-32">당첨자 발표:</span>
+							<span>2024-09-15 12:00</span>
+						</div>
+						<div class="flex">
+							<span class="font-medium w-32">발매가:</span>
+							<span class="text-primary font-bold">239,000원</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Entry Form -->
+			<div class="lg:col-span-5">
+				<div class="draw-card bg-white rounded-2xl sneaker-shadow p-6 md:p-8">
+					<div class="flex items-center mb-6">
+						<div class="ai-shield w-12 h-12 rounded-full flex items-center justify-center text-white mr-4">
+							<i class="fas fa-shield-check text-xl"></i>
+						</div>
+						<h3 class="text-2xl font-bold">응모하기</h3>
+					</div>
+					<p class="text-gray-600 mb-6">공정한 추첨을 위해 모든 응모는 AI 보안 시스템의 검증을 거칩니다.</p>
+
+					<form id="draw-entry-form" class="space-y-5">
+						<div>
+							<label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
+							<input type="email" id="email" placeholder="your-email@example.com" required
+							       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+						</div>
+
+						<div>
+							<label for="size" class="block text-sm font-medium text-gray-700 mb-1">신발 사이즈 (mm)</label>
+							<input type="text" id="size" placeholder="예: 270" required
+							       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+						</div>
+
+						<!-- AI CAPTCHA Placeholder -->
+						<div class="bg-gray-100 p-4 rounded-lg text-center">
+							<div id="captcha-container"></div>
+							<!-- <div class="ai-captcha-placeholder mb-2">
+								<i class="fas fa-robot text-4xl text-primary mb-2"></i>
+								<p class="text-sm text-gray-600">AI 보안 인증 시스템</p>
+							</div>
+							<p class="text-xs text-gray-500">실제 구현 시 AI 캡차 서비스가 이곳에 표시됩니다.</p> -->
+						</div>
+
+						<button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+							응모 제출하기
+						</button>
+					</form>
+
+					<div id="entry-result" class="mt-6 p-4 rounded-lg text-center hidden"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- How to Enter Section -->
+<section id="how-to-enter" class="py-16 bg-gray-50">
+	<div class="container mx-auto px-4">
+		<div class="text-center mb-12">
+			<h2 class="text-3xl md:text-4xl font-bold mb-4">응모는 어떻게 진행되나요?</h2>
+			<p class="text-xl text-gray-600">단 3단계로 누구나 쉽고 공정하게 참여할 수 있습니다.</p>
+		</div>
+
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+			<!-- Step 1 -->
+			<div class="step-card bg-white rounded-2xl p-6 sneaker-shadow">
+				<div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-primary text-xl font-bold mb-4">1</div>
+				<h3 class="text-xl font-bold mb-3">정보 입력</h3>
+				<p class="text-gray-600">응모에 필요한 이메일 주소와 원하시는 신발 사이즈를 정확하게 입력해주세요.</p>
+			</div>
+
+			<!-- Step 2 -->
+			<div class="step-card bg-white rounded-2xl p-6 sneaker-shadow">
+				<div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-primary text-xl font-bold mb-4">2</div>
+				<h3 class="text-xl font-bold mb-3">AI 보안 인증</h3>
+				<p class="text-gray-600">저희의 AI 기반 보안 시스템이 사람인지 봇인지 자동으로 검증합니다. 대부분의 사용자는 별다른 동작 없이 통과됩니다.</p>
+			</div>
+
+			<!-- Step 3 -->
+			<div class="step-card bg-white rounded-2xl p-6 sneaker-shadow">
+				<div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-primary text-xl font-bold mb-4">3</div>
+				<h3 class="text-xl font-bold mb-3">응모 완료</h3>
+				<p class="text-gray-600">인증이 완료되면 응모가 최종 제출됩니다. 당첨 결과는 발표 시간에 맞춰 이메일로 안내됩니다.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-12">
+	<div class="container mx-auto px-4">
+		<div class="flex flex-col md:flex-row justify-between items-center">
+			<div class="mb-6 md:mb-0">
+				<div class="flex items-center space-x-2 mb-4">
+					<span class="text-2xl">👟</span>
+					<span class="text-xl font-bold">THE DRAW</span>
+				</div>
+				<p class="text-gray-400">© 2025 THE DRAW. All rights reserved.</p>
+			</div>
+
+			<div class="flex space-x-6">
+				<a href="#" class="text-gray-400 hover:text-white transition-colors">추첨 정책</a>
+				<a href="#" class="text-gray-400 hover:text-white transition-colors">개인정보처리방침</a>
+			</div>
+		</div>
+	</div>
+</footer>
+
+<script>
+	// Countdown Timer
+	function updateCountdown() {
+		// Set the target date (example: current time + 12:45)
+		const now = new Date();
+		const target = new Date(now);
+		target.setHours(now.getHours(), now.getMinutes() + 12, now.getSeconds() + 45);
+
+		const diff = target - now;
+
+		if (diff <= 0) {
+			document.querySelectorAll('.countdown-digit span:first-child').forEach(el => {
+				el.textContent = '00';
+			});
+			return;
+		}
+
+		const hours = Math.floor(diff / (1000 * 60 * 60));
+		const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+		const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+		document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+		document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+		document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+	}
+
+	// Initialize countdown
+	setInterval(updateCountdown, 1000);
+	updateCountdown();
+
+	// Form submission handling
+	const form = document.getElementById('draw-entry-form');
+	const resultDiv = document.getElementById('entry-result');
+
+	form.addEventListener('submit', function(event) {
+		event.preventDefault(); // 실제 폼 제출 방지
+
+		// 실제 캡차 서비스와 연동될 부분
+		// 예: ai_captcha.verify().then(function(token) { ... });
+		// 아래는 연동 전 테스트를 위한 시뮬레이션 코드입니다.
+
+		resultDiv.style.display = 'block';
+		resultDiv.textContent = 'AI가 응모를 검증하고 있습니다...';
+		resultDiv.className = 'mt-6 p-4 rounded-lg text-center bg-blue-100 text-blue-800';
+
+		setTimeout(() => {
+			// 80% 확률로 성공, 20% 확률로 실패하는 가상 테스트
+			const isVerified = Math.random() > 0.2;
+
+			if (isVerified) {
+				resultDiv.textContent = '✅ 응모가 성공적으로 제출되었습니다!';
+				resultDiv.className = 'mt-6 p-4 rounded-lg text-center bg-green-100 text-green-800';
+			} else {
+				resultDiv.textContent = '❌ 비정상적인 접근이 감지되었습니다. 잠시 후 다시 시도해주세요.';
+				resultDiv.className = 'mt-6 p-4 rounded-lg text-center bg-red-100 text-red-800';
+			}
+		}, 2000); // 2초 후 결과 표시
+	});
+	renderRealCaptcha('captcha-container', {
+		theme: 'light',
+		size: 'normal'
+	}, function(result) {
+		if (result.success) {
+			console.log('캡차 성공!', result.token);
+			// 서버로 토큰 전송
+		}
+	});
+</script>
+</body>
+</html>

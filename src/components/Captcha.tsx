@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import './Captcha.css';
 import ImageCaptcha from './ImageCaptcha';
 import AbstractCaptcha from './AbstractCaptcha';
@@ -51,6 +51,7 @@ const Captcha: React.FC<CaptchaProps> = ({
   const [state, setState] = useState<CaptchaState>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [captchaCount, setCaptchaCount] = useState<number>(0);
+  const [handwritingSamples, setHandwritingSamples] = useState<string[]>([]);
   const checkboxRef = useRef<HTMLDivElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMousePositionRef = useRef<{x: number; y: number; timestamp: number} | null>(null);
@@ -314,6 +315,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       if (data.next_captcha === 'imagecaptcha') {
         setState('image-captcha');
       } else if (data.next_captcha === 'handwritingcaptcha') {
+        setHandwritingSamples(Array.isArray(data.handwriting_samples) ? data.handwriting_samples : []);
         setState('handwriting-captcha');
       } else if (data.next_captcha === 'abstractcaptcha') {
         setState('abstract-captcha');
@@ -362,7 +364,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       ) : state === 'abstract-captcha' ? (
         <AbstractCaptcha onSuccess={handleCaptchaSuccess} />
       ) : state === 'handwriting-captcha' ? (
-        <HandwritingCaptcha onSuccess={handleCaptchaSuccess} />
+        <HandwritingCaptcha onSuccess={handleCaptchaSuccess} samples={handwritingSamples} />
       ) : (
         <>
           <div className={`captcha-button ${state}`} onClick={handleButtonClick}>

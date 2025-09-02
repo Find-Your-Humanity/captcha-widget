@@ -164,7 +164,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       // 캔버스 이미지를 Base64 데이터 URL로 추출
       const imageDataUrl = canvas.toDataURL('image/png');
 
-      const response = await fetch(`${apiBaseUrl}/api/verify-handwriting`, {
+      const response = await fetch(`${apiBaseUrl}/api/handwriting-verify`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -193,9 +193,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       } else {
         behaviorCollector.current.setVerificationResult(false);
         alert('정답이 아닙니다. 다시 시도해주세요.');
-        // 새로고침(리셋)
-        clearCanvas();
-        setKeywords('');
+        // 확인 클릭 후 새로고침
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
       }
     } catch (error) {
       console.error('Handwriting verify error:', error);
@@ -211,7 +212,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   return (
     <div className="handwriting-captcha">
       <div className="captcha-header">
-        <span className="header-text">Look at the images and write the keywords that come to mind by hand.</span>
+        <span className="header-text">{/* Look at the images and write the keywords that come to mind by hand. */}이미지를 보고 떠오르는 키워드를 손글씨로 작성하세요.</span>
       </div>
       
       <div className="images-container">

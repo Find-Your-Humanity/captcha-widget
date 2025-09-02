@@ -21,6 +21,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const [ttl, setTtl] = useState<number>(0);
   const [images, setImages] = useState<RemoteImageItem[]>([]);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
+  const ttlExpiredRef = useRef(false);
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
 
@@ -38,6 +39,18 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     const timer = setInterval(() => setTtl((t) => (t > 0 ? t - 1 : 0)), 1000);
     return () => clearInterval(timer);
   }, [ttl]);
+
+  // TTL 만료 시 자동 갱신
+  useEffect(() => {
+    if (ttl === 0 && !isVerified && !loading) {
+      if (ttlExpiredRef.current) return;
+      ttlExpiredRef.current = true;
+      setError('시간이 만료되어 새로운 문제로 갱신합니다.');
+      handleRefresh();
+    } else if (ttl > 0) {
+      ttlExpiredRef.current = false;
+    }
+  }, [ttl, isVerified, loading]);
 
   const fetchChallenge = async () => {
     try {
@@ -94,8 +107,10 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
+        console.log('Abstract captcha verified successfully!');
         const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         if (targetUrl && typeof window !== 'undefined') {
+          console.log('Redirecting to:', targetUrl);
           window.location.href = targetUrl;
           return;
         }
@@ -134,7 +149,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       }}
     >
       <div className="captcha-header">
-        <span className="header-text">{question}{ttl > 0 ? ` · ${ttl}s` : ''}</span>
+        <span className="header-text">{question}</span>
       </div>
 
       {error && (

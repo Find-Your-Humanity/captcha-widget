@@ -3,6 +3,8 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install
+# 빌드 시 환경변수 주입용 .env.production 복사
+COPY .env.production .env.production
 COPY . .
 RUN npm run build
 
