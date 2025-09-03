@@ -201,6 +201,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
       const response = await fetch(`${apiBaseUrl}/api/handwriting-verify`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
           'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키를 헤더로 전송
