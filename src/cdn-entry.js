@@ -79,7 +79,7 @@ class RealCaptcha {
   }
 }
 
-일도// React 의존성 확인 및 대기 함수
+// React 의존성 확인 및 대기 함수
 function waitForReact() {
   return new Promise((resolve) => {
     const checkReact = () => {
