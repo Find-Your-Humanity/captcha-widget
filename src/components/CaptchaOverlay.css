@@ -44,10 +44,10 @@
 }
 
 /* 성공 체크마크 */
-.success-check {
+.overlay-success-check {
   animation: fadeInScale 0.5s ease;
   position: relative;
-  top: -5px;
+  top: 5px;
   transform: scale(1.4);
 }
 

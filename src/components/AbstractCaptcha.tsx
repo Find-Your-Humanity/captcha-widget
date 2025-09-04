@@ -103,7 +103,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     }
     
     setUiState('loading');
-    setLoadingMessage('추상 이미지 검증 중...');
     
     try {
       setLoading(true);

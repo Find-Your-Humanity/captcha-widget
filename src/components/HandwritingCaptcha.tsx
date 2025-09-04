@@ -200,7 +200,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     }
 
     setUiState('loading');
-    setLoadingMessage('필기 인식 중...');
 
     try {
              const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
