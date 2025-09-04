@@ -16,7 +16,7 @@
 
 .overlay-message {
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
   margin-top: 16px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -48,16 +48,18 @@
   animation: fadeInScale 0.5s ease;
   position: relative;
   top: -5px;
+  transform: scale(1.4);
 }
 
 @keyframes fadeInScale {
   0% { opacity: 0; transform: scale(0.5); }
-  100% { opacity: 1; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.4); }
 }
 
 /* 실패 X 아이콘 */
 .error-x {
   animation: shake 0.5s ease;
+  transform: scale(1.4);
 }
 
 @keyframes shake {

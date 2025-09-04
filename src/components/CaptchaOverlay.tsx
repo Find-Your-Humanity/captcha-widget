@@ -54,7 +54,9 @@ const CaptchaOverlay: React.FC<CaptchaOverlayProps> = ({ state, message }) => {
   return (
     <div className="captcha-overlay">
       {getIcon()}
-      <div className="overlay-message">{getMessage()}</div>
+      {(state === 'success' || state === 'error') && (
+        <div className="overlay-message">{getMessage()}</div>
+      )}
     </div>
   );
 };
