@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
+import CaptchaOverlay from './CaptchaOverlay';
 
 interface ImageCaptchaProps {
   onSuccess?: () => void;
@@ -18,6 +19,8 @@ interface ImageItem {
 const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -39,7 +42,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
-      const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-challenge`, { method: 'POST' });
+      const resp = await fetch(`${apiBaseUrl}/api/image-challenge`, { method: 'POST' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { challenge_id?: string; url?: string; ttl?: number; question?: string } = await resp.json();
       setChallengeId(data.challenge_id || '');
@@ -91,12 +94,22 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
   const handleVerify = async () => {
     if (isTestMode) {
       // 테스트 모드: 정답 여부와 무관하게 다음 단계로 진행
-      behaviorCollector.current.trackVerifyAttempt(true);
-      setIsVerified(true);
-      setTimeout(() => onSuccess?.(), 300);
+      setUiState('loading');
+      setLoadingMessage('테스트 모드 검증 중...');
+      setTimeout(() => {
+        setUiState('success');
+        setLoadingMessage('성공!');
+        behaviorCollector.current.trackVerifyAttempt(true);
+        setIsVerified(true);
+        setTimeout(() => onSuccess?.(), 300);
+      }, 500);
       return;
     }
     if (!challengeId) return;
+    
+    setUiState('loading');
+    setLoadingMessage('이미지 검증 중...');
+    
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
       const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-verify`, {
@@ -114,15 +127,22 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
+        setUiState('success');
         setIsVerified(true);
         setTimeout(() => onSuccess?.(), 300);
       } else {
-        alert('정답이 아닙니다. 다시 시도해주세요.');
-        setSelectedImages([]);
+        setUiState('error');
+        setTimeout(() => {
+          setSelectedImages([]);
+          setUiState('idle');
+        }, 1000);
       }
     } catch (e) {
       console.error(e);
-      alert('검증 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setUiState('error');
+      setTimeout(() => {
+        setUiState('idle');
+      }, 1000);
     }
   };
 
@@ -151,7 +171,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
 
   return (
     <div 
-      className="image-captcha"
+      className={`image-captcha ${uiState}`}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -159,6 +179,9 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         behaviorCollector.current.trackMouseMove(x, y);
       }}
     >
+      {(uiState === 'loading' || uiState === 'success' || uiState === 'error') && (
+        <CaptchaOverlay state={uiState} message={loadingMessage} />
+      )}
       <div className="captcha-header">
         <span className="header-text">{question || 'Select all matching images.'}</span>
       </div>
