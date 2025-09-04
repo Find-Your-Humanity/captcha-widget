@@ -108,7 +108,6 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     if (!challengeId) return;
     
     setUiState('loading');
-    setLoadingMessage('이미지 검증 중...');
     
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
