@@ -156,4 +156,52 @@
 .captcha-button.error {
   background-color: #ffebee;
   border-color: #f44336;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 767px) {
+  .captcha-button {
+    max-width: 320px;
+    width: 100%;
+    min-width: 260px;
+    height: auto;
+    min-height: 55px;
+    aspect-ratio: 5.33;
+    padding: 0 12px;
+  }
+  
+  .captcha-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .captcha-button {
+    min-width: 240px;
+    min-height: 50px;
+    padding: 0 10px;
+  }
+  
+  .captcha-text {
+    font-size: 12px;
+  }
+  
+  .captcha-left,
+  .captcha-right {
+    width: 36px;
+    height: 36px;
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .captcha-button {
+    min-width: 220px;
+    min-height: 48px;
+  }
+  
+  .captcha-text {
+    font-size: 11px;
+  }
 } 

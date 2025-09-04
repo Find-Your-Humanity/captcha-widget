@@ -167,4 +167,69 @@
 
 .image-captcha.error {
   border: 3px solid #F44336;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 767px) {
+  .image-captcha {
+    max-width: 400px;
+    width: 100%;
+    min-width: 300px;
+  }
+  
+  .captcha-header {
+    padding: 14px;
+  }
+  
+  .header-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-captcha {
+    min-width: 280px;
+  }
+  
+  .captcha-header {
+    padding: 12px;
+  }
+  
+  .header-text {
+    font-size: 12px;
+  }
+  
+  .captcha-controls {
+    padding: 12px;
+  }
+  
+  .control-button {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .verify-button {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .image-captcha {
+    min-width: 260px;
+  }
+  
+  .captcha-header {
+    padding: 10px;
+  }
+  
+  .header-text {
+    font-size: 11px;
+  }
+  
+  .captcha-controls {
+    padding: 10px;
+  }
 } 

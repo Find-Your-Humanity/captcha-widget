@@ -144,4 +144,93 @@
 
 .handwriting-captcha.error {
   border: 3px solid #F44336;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 767px) {
+  .handwriting-captcha {
+    max-width: 500px;
+    width: 100%;
+    min-width: 380px;
+  }
+  
+  .captcha-header {
+    padding: 14px;
+  }
+  
+  .header-text {
+    font-size: 13px;
+  }
+  
+  .handwriting-area {
+    padding: 14px;
+  }
+  
+  .grid-pattern {
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .handwriting-captcha {
+    min-width: 320px;
+  }
+  
+  .captcha-header {
+    padding: 12px;
+  }
+  
+  .header-text {
+    font-size: 12px;
+  }
+  
+  .handwriting-area {
+    padding: 12px;
+  }
+  
+  .grid-pattern {
+    height: 160px;
+  }
+  
+  .captcha-controls {
+    padding: 12px;
+  }
+  
+  .control-button {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .verify-button {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .handwriting-captcha {
+    min-width: 280px;
+  }
+  
+  .captcha-header {
+    padding: 10px;
+  }
+  
+  .header-text {
+    font-size: 11px;
+  }
+  
+  .handwriting-area {
+    padding: 10px;
+  }
+  
+  .grid-pattern {
+    height: 140px;
+  }
+  
+  .captcha-controls {
+    padding: 10px;
+  }
 } 

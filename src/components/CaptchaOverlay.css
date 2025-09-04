@@ -66,4 +66,51 @@
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .overlay-message {
+    font-size: 14px;
+    margin-top: 12px;
+  }
+  
+  .overlay-spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 2.5px;
+  }
+  
+  .overlay-success-check,
+  .error-x {
+    transform: scale(1.2);
+  }
+  
+  @keyframes fadeInScale {
+    0% { opacity: 0; transform: scale(0.5); }
+    100% { opacity: 1; transform: scale(1.2); }
+  }
+}
+
+@media (max-width: 360px) {
+  .overlay-message {
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  
+  .overlay-spinner {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+  }
+  
+  .overlay-success-check,
+  .error-x {
+    transform: scale(1.1);
+  }
+  
+  @keyframes fadeInScale {
+    0% { opacity: 0; transform: scale(0.5); }
+    100% { opacity: 1; transform: scale(1.1); }
+  }
 } 
