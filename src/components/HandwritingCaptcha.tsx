@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './HandwritingCaptcha.css';
 import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
+import CaptchaOverlay from './CaptchaOverlay';
 
 interface HandwritingCaptchaProps {
   onSuccess?: () => void;
@@ -18,6 +19,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const behaviorCollector = useRef<HandwritingBehaviorCollector>(new HandwritingBehaviorCollector());
   const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
+  const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const ttlExpiredRef = useRef(false);
 
@@ -173,8 +176,14 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   const handleVerify = async () => {
     if (isTestMode) {
-      behaviorCollector.current.setVerificationResult(true);
-      setTimeout(() => onSuccess?.(), 300);
+      setUiState('loading');
+      setLoadingMessage('테스트 모드 검증 중...');
+      setTimeout(() => {
+        setUiState('success');
+        setLoadingMessage('성공!');
+        behaviorCollector.current.setVerificationResult(true);
+        setTimeout(() => onSuccess?.(), 300);
+      }, 500);
       return;
     }
 
@@ -189,6 +198,9 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       alert('캔버스를 찾을 수 없습니다. 다시 시도해주세요.');
       return;
     }
+
+    setUiState('loading');
+    setLoadingMessage('필기 인식 중...');
 
     try {
              const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
@@ -220,6 +232,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       const data: { success: boolean; redirect_url?: string } = await response.json();
 
       if (data.success) {
+        setUiState('success');
+        setLoadingMessage('성공!');
         behaviorCollector.current.setVerificationResult(true);
         const envTarget = process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         const targetUrl = envTarget || data.redirect_url || document.referrer || window.location.origin;
@@ -227,15 +241,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
           window.location.assign(targetUrl);
         }
       } else {
+        setUiState('error');
+        setLoadingMessage('인식 실패');
         behaviorCollector.current.setVerificationResult(false);
-        alert('정답이 아닙니다. 다시 시도해주세요.');
-        // 전체 페이지 이동 대신 샘플과 캔버스만 재로딩
-        clearCanvas();
-        refreshSamples();
+        setTimeout(() => {
+          clearCanvas();
+          refreshSamples();
+          setUiState('idle');
+        }, 1000);
       }
     } catch (error) {
       console.error('Handwriting verify error:', error);
-      alert('서버 검증 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      setUiState('error');
+      setLoadingMessage('서버 검증 중 오류가 발생했습니다');
+      setTimeout(() => {
+        setUiState('idle');
+      }, 1000);
     }
   };
 
@@ -246,7 +267,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
 
   return (
-    <div className="handwriting-captcha">
+    <div className={`handwriting-captcha ${uiState}`}>
+      {(uiState === 'loading' || uiState === 'success' || uiState === 'error') && (
+        <CaptchaOverlay state={uiState} message={loadingMessage} />
+      )}
       <div className="captcha-header">
         <span className="header-text">{/* Look at the images and write the keywords that come to mind by hand. */}이미지를 보고 떠오르는 키워드를 손글씨로 작성하세요.</span>
       </div>

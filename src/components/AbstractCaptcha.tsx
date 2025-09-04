@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AbstractCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
+import CaptchaOverlay from './CaptchaOverlay';
 
 interface RemoteImageItem {
   id: number;
@@ -14,6 +15,8 @@ interface AbstractCaptchaProps {
 const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [challengeId, setChallengeId] = useState<string>('');
@@ -87,11 +90,21 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
   const handleVerify = async () => {
     if (!challengeId) return;
     if (isTestMode) {
-      behaviorCollector.current.trackVerifyAttempt(true);
-      setIsVerified(true);
-      setTimeout(() => onSuccess?.(), 300);
+      setUiState('loading');
+      setLoadingMessage('테스트 모드 검증 중...');
+      setTimeout(() => {
+        setUiState('success');
+        setLoadingMessage('성공!');
+        behaviorCollector.current.trackVerifyAttempt(true);
+        setIsVerified(true);
+        setTimeout(() => onSuccess?.(), 300);
+      }, 500);
       return;
     }
+    
+    setUiState('loading');
+    setLoadingMessage('추상 이미지 검증 중...');
+    
     try {
       setLoading(true);
       const requestBody = { challenge_id: challengeId, selections: selectedImages };
@@ -107,6 +120,8 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
+        setUiState('success');
+        setLoadingMessage('성공!');
         console.log('Abstract captcha verified successfully!');
         const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         if (targetUrl && typeof window !== 'undefined') {
@@ -118,14 +133,21 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
         setIsVerified(true);
         return;
       } else {
-        // 실패 시 경고 및 리셋
-        alert('정답이 아닙니다. 다시 시도해주세요.');
-        setSelectedImages([]);
-        fetchChallenge();
+        setUiState('error');
+        setLoadingMessage('틀렸습니다');
+        setTimeout(() => {
+          setSelectedImages([]);
+          fetchChallenge();
+          setUiState('idle');
+        }, 1000);
       }
     } catch (e: any) {
       console.error(e);
-      setError('검증에 실패했습니다. 다시 시도해주세요.');
+      setUiState('error');
+      setLoadingMessage('검증에 실패했습니다');
+      setTimeout(() => {
+        setUiState('idle');
+      }, 1000);
     } finally {
       setLoading(false);
     }
@@ -140,7 +162,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
 
   return (
     <div
-      className="warm-feeling-captcha"
+      className={`warm-feeling-captcha ${uiState}`}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -148,6 +170,9 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
         behaviorCollector.current.trackMouseMove(x, y);
       }}
     >
+      {(uiState === 'loading' || uiState === 'success' || uiState === 'error') && (
+        <CaptchaOverlay state={uiState} message={loadingMessage} />
+      )}
       <div className="captcha-header">
         <span className="header-text">{question}</span>
       </div>
