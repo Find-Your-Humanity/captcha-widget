@@ -320,20 +320,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
               />
             </svg>
           </button>
-          <button className="control-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                fill="#666"
-              />
-            </svg>
-          </button>
-          <button className="control-button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#666" strokeWidth="2" fill="none"/>
-              <path d="M12 16v-4M12 8h.01" stroke="#666" strokeWidth="2" fill="none"/>
-            </svg>
-          </button>
         </div>
         
         <button 
