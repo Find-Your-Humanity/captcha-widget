@@ -81,20 +81,20 @@ const Captcha: React.FC<CaptchaProps> = ({
       window.addEventListener('click', handleMouseEvent);
       window.addEventListener('scroll', handleScroll);
 
-      // 10초마다 데스크톱 데이터 저장
-      autoSaveIntervalRef.current = setInterval(() => {
-        saveBehaviorData(false);
-      }, 10000);
+      // 자동 저장 비활성화 (성능 최적화)
+      // autoSaveIntervalRef.current = setInterval(() => {
+      //   saveBehaviorData(false);
+      // }, 10000);
     } else {
       // 모바일: 터치 이벤트 리스너 등록
       window.addEventListener('touchstart', handleTouchStart);
       window.addEventListener('touchmove', handleTouchMove);
       window.addEventListener('touchend', handleTouchEnd);
 
-      // 10초마다 모바일 데이터 저장
-      autoSaveIntervalRef.current = setInterval(() => {
-        saveMobileBehaviorData();
-      }, 10000);
+      // 자동 저장 비활성화 (성능 최적화)
+      // autoSaveIntervalRef.current = setInterval(() => {
+      //   saveMobileBehaviorData();
+      // }, 10000);
     }
 
     return () => {

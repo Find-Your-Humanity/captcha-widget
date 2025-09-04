@@ -207,6 +207,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
         },
         body: JSON.stringify({
           image_base64: imageDataUrl,
+          user_id: null,  // TODO: 실제 사용자 ID로 교체
+          api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2',  // API 키를 body에도 포함
           // 선택: 추가 컨텍스트 전송 가능
           // keywords,  // 필요시 활성화
         })

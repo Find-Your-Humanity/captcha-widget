@@ -102,7 +102,12 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenge_id: challengeId, selections: selectedImages })
+        body: JSON.stringify({ 
+          challenge_id: challengeId, 
+          selections: selectedImages,
+          user_id: null,  // TODO: 실제 사용자 ID로 교체
+          api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키 추가
+        })
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { success?: boolean; attempts?: number; downshift?: boolean } = await resp.json();

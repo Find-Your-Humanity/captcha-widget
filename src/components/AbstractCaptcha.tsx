@@ -94,7 +94,12 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     }
     try {
       setLoading(true);
-      const requestBody = { challenge_id: challengeId, selections: selectedImages };
+      const requestBody = { 
+        challenge_id: challengeId, 
+        selections: selectedImages,
+        user_id: null,  // TODO: 실제 사용자 ID로 교체
+        api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키 추가
+      };
       console.debug('[AbstractCaptcha] request /api/abstract-verify', requestBody);
       const resp = await fetch(`${apiBaseUrl}/api/abstract-verify`, {
         method: 'POST',
