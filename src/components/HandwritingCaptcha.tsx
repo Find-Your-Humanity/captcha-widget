@@ -211,6 +211,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       // 캔버스 이미지를 Base64 데이터 URL로 추출
       const imageDataUrl = canvas.toDataURL('image/png');
 
+      const requestBody = {
+        image_base64: imageDataUrl,
+        user_id: null,  // TODO: 실제 사용자 ID로 교체
+        api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2',  // API 키를 body에도 포함
+        // 선택: 추가 컨텍스트 전송 가능
+        // keywords,  // 필요시 활성화
+      };
+      
+      console.log('🔍 [HandwritingCaptcha] 요청 데이터:', requestBody);
+      
       const response = await fetch(`${apiBaseUrl}/api/handwriting-verify`, {
         method: 'POST',
         credentials: 'include',
@@ -218,13 +228,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
           'Content-Type': 'application/json',
           'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키를 헤더로 전송
         },
-        body: JSON.stringify({
-          image_base64: imageDataUrl,
-          user_id: null,  // TODO: 실제 사용자 ID로 교체
-          api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2',  // API 키를 body에도 포함
-          // 선택: 추가 컨텍스트 전송 가능
-          // keywords,  // 필요시 활성화
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
