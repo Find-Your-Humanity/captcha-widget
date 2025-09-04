@@ -39,7 +39,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     try {
       setLoading(true);
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
-      const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-challenge`, { method: 'POST' });
+      const resp = await fetch(`${apiBaseUrl}/api/image-challenge`, { method: 'POST' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { challenge_id?: string; url?: string; ttl?: number; question?: string } = await resp.json();
       setChallengeId(data.challenge_id || '');
