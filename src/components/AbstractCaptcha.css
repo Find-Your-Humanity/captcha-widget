@@ -45,7 +45,7 @@
 }
 
 .image-item.selected {
-  background-color: #e3f2fd;
+  background-color: rgba(227, 242, 253, 0.6);
 }
 
 .image-placeholder {
