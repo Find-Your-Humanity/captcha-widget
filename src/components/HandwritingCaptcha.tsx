@@ -233,7 +233,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
       if (data.success) {
         setUiState('success');
-        setLoadingMessage('성공!');
         behaviorCollector.current.setVerificationResult(true);
         const envTarget = process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         const targetUrl = envTarget || data.redirect_url || document.referrer || window.location.origin;
@@ -242,7 +241,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
         }
       } else {
         setUiState('error');
-        setLoadingMessage('인식 실패');
         behaviorCollector.current.setVerificationResult(false);
         setTimeout(() => {
           clearCanvas();
@@ -253,7 +251,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     } catch (error) {
       console.error('Handwriting verify error:', error);
       setUiState('error');
-      setLoadingMessage('서버 검증 중 오류가 발생했습니다');
       setTimeout(() => {
         setUiState('idle');
       }, 1000);

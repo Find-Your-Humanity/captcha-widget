@@ -80,7 +80,7 @@
 }
 
 .overlay-cell.selected {
-  background-color: rgba(33, 150, 243, 0.6);
+  background-color: rgba(33, 150, 243, 0.4);
 }
 
 .image-placeholder { display: none; }
@@ -149,72 +149,6 @@
 
 .verify-button.active:hover {
   background-color: #3367d6;
-}
-
-/* 오버레이 스타일 */
-.captcha-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-
-.overlay-message {
-  color: white;
-  font-size: 16px;
-  font-weight: 500;
-  margin-top: 12px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-/* 오버레이 로딩 스피너 */
-.overlay-loading-spinner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* 성공 체크마크 */
-.success-check {
-  animation: fadeInScale 0.5s ease;
-}
-
-@keyframes fadeInScale {
-  0% { opacity: 0; transform: scale(0.5); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* 실패 X 아이콘 */
-.error-x {
-  animation: shake 0.5s ease;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
 }
 
 /* 상태별 테두리 */

@@ -121,7 +121,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
         setUiState('success');
-        setLoadingMessage('성공!');
         console.log('Abstract captcha verified successfully!');
         const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         if (targetUrl && typeof window !== 'undefined') {
@@ -134,7 +133,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
         return;
       } else {
         setUiState('error');
-        setLoadingMessage('틀렸습니다');
         setTimeout(() => {
           setSelectedImages([]);
           fetchChallenge();
@@ -144,7 +142,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
     } catch (e: any) {
       console.error(e);
       setUiState('error');
-      setLoadingMessage('검증에 실패했습니다');
       setTimeout(() => {
         setUiState('idle');
       }, 1000);

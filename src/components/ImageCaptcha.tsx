@@ -123,12 +123,10 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
         setUiState('success');
-        setLoadingMessage('성공!');
         setIsVerified(true);
         setTimeout(() => onSuccess?.(), 300);
       } else {
         setUiState('error');
-        setLoadingMessage('틀렸습니다');
         setTimeout(() => {
           setSelectedImages([]);
           setUiState('idle');
@@ -137,7 +135,6 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
     } catch (e) {
       console.error(e);
       setUiState('error');
-      setLoadingMessage('검증 중 오류가 발생했습니다');
       setTimeout(() => {
         setUiState('idle');
       }, 1000);
