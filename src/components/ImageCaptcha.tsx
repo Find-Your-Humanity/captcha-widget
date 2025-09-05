@@ -130,11 +130,9 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
         setIsVerified(true);
         setTimeout(() => onSuccess?.(), 300);
       } else {
-        setUiState('error');
-        setTimeout(() => {
-          setSelectedImages([]);
-          setUiState('idle');
-        }, 1000);
+        // 실패 시 자동 새로고침(새 챌린지)
+        setSelectedImages([]);
+        handleRefresh();
       }
     } catch (e) {
       console.error(e);
