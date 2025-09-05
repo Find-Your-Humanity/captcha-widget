@@ -126,13 +126,22 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
       if (ok) {
+        // 성공: 체크 표시 1초 노출 후 오버레이 닫고 새 챌린지 로드
         setUiState('success');
         setIsVerified(true);
-        setTimeout(() => onSuccess?.(), 300);
+        setTimeout(() => {
+          setUiState('idle');
+          setIsVerified(false);
+          handleRefresh();
+        }, 1000);
       } else {
-        // 실패 시 자동 새로고침(새 챌린지)
-        setSelectedImages([]);
-        handleRefresh();
+        // 실패: X 표시 1초 노출 후 오버레이 닫고 새 챌린지 로드
+        setUiState('error');
+        setTimeout(() => {
+          setUiState('idle');
+          setSelectedImages([]);
+          handleRefresh();
+        }, 1000);
       }
     } catch (e) {
       console.error(e);
