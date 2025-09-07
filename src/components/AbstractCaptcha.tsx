@@ -126,14 +126,9 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
       if (ok) {
         setUiState('success');
         console.log('Abstract captcha verified successfully!');
-        const targetUrl = (data && data.redirect_url) || process.env.REACT_APP_SUCCESS_REDIRECT_URL;
-        if (targetUrl && typeof window !== 'undefined') {
-          console.log('Redirecting to:', targetUrl);
-          window.location.href = targetUrl;
-          return;
-        }
-        // 리다이렉트 설정이 없으면 다음 캡챠로 넘어가지 않고 성공 상태만 표시
+        // 리다이렉트 제거: 성공 상태만 표시하고 콜백을 호출합니다.
         setIsVerified(true);
+        onSuccess?.();
         return;
       } else {
         setUiState('error');
