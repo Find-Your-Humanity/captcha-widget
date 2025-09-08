@@ -23,6 +23,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [ttl, setTtl] = useState<number>(parseInt(process.env.REACT_APP_CAPTCHA_TTL || '60'));
   const ttlExpiredRef = useRef(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
 
   // 샘플이 변경되면 이미지 상태 초기화
   useEffect(() => {
@@ -73,7 +74,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
          } 
        });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data: { samples?: string[]; ttl?: number } = await resp.json();
+      const data: { samples?: string[]; ttl?: number; challenge_id?: string } = await resp.json();
       // 새 샘플로 교체
       const imgs = (data.samples || []).slice(0, 5).map((url, idx) => ({ id: idx + 1, src: url, alt: `Sample ${idx + 1}` }));
       setImages(imgs);
@@ -81,6 +82,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       if (typeof data.ttl === 'number' && data.ttl > 0) {
         setTtl(data.ttl);
       }
+      setChallengeId(data.challenge_id || null);
     } catch (e) {
       console.error('failed to refresh handwriting samples', e);
     } finally {
@@ -106,6 +108,11 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       ttlExpiredRef.current = false;
     }
   }, [ttl]);
+
+  // 컴포넌트 마운트 시 샘플 자동 로드
+  useEffect(() => {
+    refreshSamples();
+  }, []);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -214,6 +221,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
         image_base64: imageDataUrl,
         user_id: null,  // TODO: 실제 사용자 ID로 교체
         api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2',  // API 키를 body에도 포함
+        challenge_id: challengeId || '', // 챌린지 ID 포함
         // 선택: 추가 컨텍스트 전송 가능
         // keywords,  // 필요시 활성화
       };
