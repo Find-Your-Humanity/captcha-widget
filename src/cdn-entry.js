@@ -16,7 +16,7 @@ class RealCaptcha {
     
     // API 키 검증
     if (!this.options.siteKey) {
-      throw new Error('siteKey is required. Please provide your API key.');
+      throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
     }
   }
 
@@ -106,6 +106,10 @@ async function initializeRealCaptcha() {
     
     // 간편 사용을 위한 헬퍼 함수 (reCAPTCHA 스타일)
     window.renderRealCaptcha = (containerId, options, callback) => {
+      // siteKey 필수 가드
+      if (!options || !options.siteKey) {
+        throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
+      }
       const captcha = new RealCaptcha(options);
       return captcha.render(containerId, callback);
     };
@@ -116,7 +120,7 @@ async function initializeRealCaptcha() {
         const { container, siteKey, callback, 'expired-callback': expiredCallback, ...rest } = options;
         
         if (!siteKey) {
-          throw new Error('siteKey is required');
+          throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
         }
         
         if (!container) {
