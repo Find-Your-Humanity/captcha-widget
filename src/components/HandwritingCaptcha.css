@@ -49,6 +49,9 @@
 .handwriting-area {
   padding: 16px;
   background-color: #ffffff;
+  touch-action: none;
+  overflow: hidden;
+  position: relative;
 }
 
 .grid-pattern {
@@ -61,6 +64,8 @@
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   position: relative;
+  touch-action: none;
+  overflow: hidden;
 }
 
 .drawing-canvas {
@@ -71,7 +76,6 @@
   height: 100%;
   cursor: crosshair;
   background-color: transparent;
-  /* 모바일 터치 동작 제어 */
   touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
