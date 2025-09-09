@@ -113,12 +113,12 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
         challenge_id: challengeId, 
         selections: selectedImages,
         user_id: null,  // TODO: 실제 사용자 ID로 교체
-        api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키 추가
+        api_key: siteKey || ''  // API 키 추가
       };
       console.debug('[AbstractCaptcha] request /api/abstract-verify', requestBody);
       const resp = await fetch(`${apiBaseUrl}/api/abstract-verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(siteKey ? { 'X-API-Key': siteKey } : {}) },
         body: JSON.stringify(requestBody)
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

@@ -2,20 +2,20 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Captcha from './components/Captcha.tsx';
 
-// CDN 전용 엔트리 포인트
+// CDN 전용 엔트리 포인트 (공개/비밀 키 방식)
 class RealCaptcha {
   constructor(options = {}) {
     this.options = {
-      siteKey: '', // API 키 (필수)
+      siteKey: '', // 공개 키 (필수)
       theme: 'light',
       size: 'normal',
       language: 'ko',
-                                                 apiEndpoint: 'https://api.realcatcha.com', // 메인 API 게이트웨이
+      apiEndpoint: 'https://api.realcatcha.com', // 메인 API 게이트웨이
       cdnEndpoint: 'https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com', // CDN 엔드포인트
       ...options
     };
     
-    // API 키 검증
+    // 공개 키 검증
     if (!this.options.siteKey) {
       throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
     }
@@ -42,7 +42,7 @@ class RealCaptcha {
     root.render(
       React.createElement(Captcha, {
         onComplete: handleCaptchaComplete,
-        siteKey: this.options.siteKey, // API 키 전달
+        siteKey: this.options.siteKey, // 공개 키 전달
         theme: this.options.theme,
         size: this.options.size,
         language: this.options.language,
@@ -60,18 +60,18 @@ class RealCaptcha {
         root.render(
           React.createElement(Captcha, {
             onComplete: handleCaptchaComplete,
-            siteKey: this.options.siteKey, // API 키 전달
+            siteKey: this.options.siteKey, // 공개 키 전달
             theme: this.options.theme,
             size: this.options.size,
             language: this.options.language,
             apiEndpoint: this.options.apiEndpoint,
-        cdnEndpoint: this.options.cdnEndpoint,
+            cdnEndpoint: this.options.cdnEndpoint,
             key: Date.now() // 강제 리렌더링
           })
         );
       },
-      // 토큰 검증을 위한 헬퍼 메서드 추가
-      verifyToken: async (secretKey, captchaToken, captchaResponse) => {
+      // 토큰 검증을 위한 헬퍼 메서드 추가 (비밀 키는 서버에서만 사용)
+      verifyToken: async (captchaToken, captchaResponse) => {
         try {
           const response = await fetch(`${this.options.apiEndpoint}/api/verify-captcha`, {
             method: 'POST',
@@ -79,8 +79,7 @@ class RealCaptcha {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              site_key: this.options.siteKey,
-              secret_key: secretKey,
+              site_key: this.options.siteKey, // 공개 키만 전송
               captcha_token: captchaToken,
               response: captchaResponse
             })
@@ -133,7 +132,7 @@ async function initializeRealCaptcha() {
     // 초기화 함수도 전역으로 노출
     window.createRealCaptcha = (options) => new RealCaptcha(options);
     
-    // 간편 사용을 위한 헬퍼 함수 (reCAPTCHA 스타일)
+    // 간편 사용을 위한 헬퍼 함수 (공개/비밀 키 방식)
     window.renderRealCaptcha = (containerId, options, callback) => {
       // siteKey 필수 가드
       if (!options || !options.siteKey) {
@@ -143,7 +142,7 @@ async function initializeRealCaptcha() {
       return captcha.render(containerId, callback);
     };
     
-    // reCAPTCHA 호환성을 위한 별칭
+    // reCAPTCHA 호환성을 위한 별칭 (공개/비밀 키 방식)
     window.REAL = {
       init: (options) => {
         const { container, siteKey, callback, 'expired-callback': expiredCallback, ...rest } = options;
@@ -178,7 +177,7 @@ async function initializeRealCaptcha() {
       }
     };
     
-    console.log('✅ RealCaptcha 위젯 초기화 완료');
+    console.log('✅ RealCaptcha 위젯 초기화 완료 (공개/비밀 키 방식)');
     
     // 대기 중인 초기화 호출이 있다면 실행
     if (window.__REAL_PENDING_INIT__) {

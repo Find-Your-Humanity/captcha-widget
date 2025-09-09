@@ -1,20 +1,21 @@
 {
+  "name": "Real Captcha Widget",
   "version": "1.0.0",
-  "buildTime": "2025-01-09T01:02:00.000Z",
+  "buildTime": "2025-09-09T04:32:12.392Z",
+  "size": 71445,
+  "sizeFormatted": "69.77 KB",
   "files": {
-    "realcaptcha-widget.min.js": {
-      "size": 69800,
-      "hash": "sha256-abc123def456",
-      "type": "application/javascript"
-    }
+    "main": "realcaptcha-widget.min.js",
+    "example": "example.html"
   },
   "cdn": {
-    "provider": "kakao",
-    "endpoint": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com",
-    "region": "kr-central-2"
+    "recommended": {
+      "react": "https://unpkg.com/react@18/umd/react.production.min.js",
+      "reactDom": "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    }
   },
-  "api": {
-    "endpoint": "https://api.realcatcha.com",
-    "version": "v1"
+  "usage": {
+    "basic": "renderRealCaptcha(\"container-id\", options, callback)",
+    "advanced": "new RealCaptcha(options).render(\"container-id\", callback)"
   }
 }
