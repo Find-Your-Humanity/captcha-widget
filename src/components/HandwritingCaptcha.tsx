@@ -125,11 +125,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
     if ('touches' in e) {
       // 터치 이벤트
-      const touch = e.touches[0];
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (!touch) return { x: 0, y: 0 };
+      
       const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
       return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
+        x: (touch.clientX - rect.left) * scaleX / 2, // 캔버스 스케일(2배) 적용
+        y: (touch.clientY - rect.top) * scaleY / 2
       };
     } else {
       // 마우스 이벤트
@@ -195,10 +200,15 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     e.preventDefault();
     e.stopPropagation();
     
+    console.log('🖐️ Touch Start:', e.touches.length, 'touches');
+    
     // 터치 이벤트 중복 방지
     const now = Date.now();
     if (now - lastTouchTimeRef.current < 50) return;
     lastTouchTimeRef.current = now;
+    
+    const { x, y } = getEventCoordinates(e);
+    console.log('📍 Touch coordinates:', { x, y });
     
     handleDrawingStart(e);
   };
@@ -206,12 +216,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!isDrawing) {
+      console.log('⚠️ Touch move but not drawing');
+      return;
+    }
+    
+    const { x, y } = getEventCoordinates(e);
+    console.log('✏️ Touch move:', { x, y, isDrawing });
+    
     handleDrawing(e);
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('🛑 Touch End');
     handleDrawingEnd();
   };
 
