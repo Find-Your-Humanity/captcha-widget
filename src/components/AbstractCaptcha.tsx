@@ -28,7 +28,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
   const [images, setImages] = useState<RemoteImageItem[]>([]);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const ttlExpiredRef = useRef(false);
-  const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
 
   useEffect(() => {
@@ -92,18 +91,6 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
 
   const handleVerify = async () => {
     if (!challengeId) return;
-    if (isTestMode) {
-      setUiState('loading');
-      setLoadingMessage('테스트 모드 검증 중...');
-      setTimeout(() => {
-        setUiState('success');
-        setLoadingMessage('성공!');
-        behaviorCollector.current.trackVerifyAttempt(true);
-        setIsVerified(true);
-        setTimeout(() => onSuccess?.(), 300);
-      }, 500);
-      return;
-    }
     
     setUiState('loading');
     
@@ -129,9 +116,8 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
       if (ok) {
         setUiState('success');
         console.log('Abstract captcha verified successfully!');
-        // 리다이렉트 제거: 성공 상태만 표시하고 콜백을 호출합니다.
+        // 성공 상태만 표시하고 추가 호출하지 않음
         setIsVerified(true);
-        onSuccess?.();
         return;
       } else {
         setUiState('error');
@@ -213,9 +199,9 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
         </div>
 
         <button
-          className={`verify-button ${(isTestMode || selectedImages.length > 0) ? 'active' : ''}`}
+          className={`verify-button ${selectedImages.length > 0 ? 'active' : ''}`}
           onClick={handleVerify}
-          disabled={!isTestMode && (selectedImages.length === 0 || loading)}
+          disabled={selectedImages.length === 0 || loading}
         >
           VERIFY
         </button>

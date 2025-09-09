@@ -144,15 +144,6 @@ const Captcha: React.FC<CaptchaProps> = ({
     }
   }, [state]);
 
-  // 테스트 모드 여부 (환경변수)
-  const isTestMode = (process.env.REACT_APP_TEST_MODE === 'true');
-
-  // 테스트 모드용: 다음 캡차 타입 순환 선택
-  const pickNextCaptchaType = (): CaptchaState => {
-    const sequence = getNextSequence();
-    const order: CaptchaState[] = ['image-captcha', 'handwriting-captcha', 'abstract-captcha'];
-    return order[(sequence - 1) % order.length];
-  };
 
   const handleMouseMove = (e: MouseEvent) => {
     // 현재 마우스 위치와 시간
@@ -238,7 +229,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       setTimeout(() => {
         setState('success');
         setTimeout(() => {
-          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출 (테스트 모드에서는 순환)
+          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출
         }, 1000);
       }, 2000);
     } else if (state === 'error') {
@@ -256,13 +247,6 @@ const Captcha: React.FC<CaptchaProps> = ({
         return;
       }
       inFlightRef.current = true;
-      // 테스트 모드에서는 백엔드 호출 없이 순환
-      if (isTestMode) {
-        const nextType = pickNextCaptchaType();
-        setState(nextType);
-        inFlightRef.current = false;
-        return;
-      }
 
       // props에서 받은 API 엔드포인트 사용
       const apiBaseUrl = apiEndpoint || 'https://api.realcatcha.com';
@@ -358,28 +342,9 @@ const Captcha: React.FC<CaptchaProps> = ({
   };
 
   // 사용자가 기본 캡차를 통과했을 때 호출
-  const handleCaptchaSuccess = (captchaResponse?: any) => {
-    if (isTestMode) {
-      const nextType = pickNextCaptchaType();
-      setState(nextType);
-    } else {
-      // 캡차 응답이 있으면 토큰과 함께 최종 성공 처리
-      if (captchaResponse && captchaToken) {
-        setState('success');
-        if (onComplete) {
-          const result: CaptchaResult = {
-            success: true,
-            captcha_token: captchaToken,
-            captcha_type: captchaResponse.captcha_type || 'unknown',
-            confidence_score: captchaResponse.confidence_score || 1.0,
-            is_bot_detected: false
-          };
-          onComplete(result);
-        }
-      } else {
-        handleBehaviorAnalysis();
-      }
-    }
+  const handleCaptchaSuccess = () => {
+    // 캡차 성공 시 성공 상태로만 변경
+    setState('success');
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
