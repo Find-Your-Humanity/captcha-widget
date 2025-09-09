@@ -52,6 +52,7 @@ module.exports = {
         NODE_ENV: 'production',
         REACT_APP_TEST_MODE: 'false',
         REACT_APP_API_BASE_URL: 'https://api.realcatcha.com',
+        REACT_APP_CDN_BASE_URL: 'https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com',
         REACT_APP_SUCCESS_REDIRECT_URL: ''
       }),
       'process.env.NODE_ENV': JSON.stringify('production')
