@@ -23,7 +23,7 @@ class CDNDeployer {
       },
       // 카카오클라우드 CDN 설정 (대안)
       kakao: {
-        endpoint: process.env.KAKAO_CDN_ENDPOINT,
+        endpoint: process.env.KAKAO_CDN_ENDPOINT || 'https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com',
         accessKey: process.env.KAKAO_ACCESS_KEY,
         secretKey: process.env.KAKAO_SECRET_KEY,
         bucket: process.env.KAKAO_CDN_BUCKET || 'realcaptcha-cdn'

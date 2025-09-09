@@ -11,12 +11,13 @@ class RealCaptcha {
       size: 'normal',
       language: 'ko',
                                                  apiEndpoint: 'https://api.realcatcha.com', // 메인 API 게이트웨이
+      cdnEndpoint: 'https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com', // CDN 엔드포인트
       ...options
     };
     
     // API 키 검증
     if (!this.options.siteKey) {
-      throw new Error('siteKey is required. Please provide your API key.');
+      throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
     }
   }
 
@@ -45,7 +46,8 @@ class RealCaptcha {
         theme: this.options.theme,
         size: this.options.size,
         language: this.options.language,
-        apiEndpoint: this.options.apiEndpoint
+        apiEndpoint: this.options.apiEndpoint,
+        cdnEndpoint: this.options.cdnEndpoint
       })
     );
 
@@ -63,9 +65,36 @@ class RealCaptcha {
             size: this.options.size,
             language: this.options.language,
             apiEndpoint: this.options.apiEndpoint,
+        cdnEndpoint: this.options.cdnEndpoint,
             key: Date.now() // 강제 리렌더링
           })
         );
+      },
+      // 토큰 검증을 위한 헬퍼 메서드 추가
+      verifyToken: async (secretKey, captchaToken, captchaResponse) => {
+        try {
+          const response = await fetch(`${this.options.apiEndpoint}/api/verify-captcha`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              site_key: this.options.siteKey,
+              secret_key: secretKey,
+              captcha_token: captchaToken,
+              response: captchaResponse
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          throw error;
+        }
       }
     };
   }
@@ -106,6 +135,10 @@ async function initializeRealCaptcha() {
     
     // 간편 사용을 위한 헬퍼 함수 (reCAPTCHA 스타일)
     window.renderRealCaptcha = (containerId, options, callback) => {
+      // siteKey 필수 가드
+      if (!options || !options.siteKey) {
+        throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
+      }
       const captcha = new RealCaptcha(options);
       return captcha.render(containerId, callback);
     };
@@ -116,7 +149,7 @@ async function initializeRealCaptcha() {
         const { container, siteKey, callback, 'expired-callback': expiredCallback, ...rest } = options;
         
         if (!siteKey) {
-          throw new Error('siteKey is required');
+          throw new Error('siteKey가 필요합니다. 발급받은 key_id를 전달하세요.');
         }
         
         if (!container) {

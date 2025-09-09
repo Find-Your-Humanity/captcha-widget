@@ -4,7 +4,10 @@ import ImageBehaviorCollector from './ImageBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
 
 interface ImageCaptchaProps {
-  onSuccess?: () => void;
+  onSuccess?: (captchaResponse?: any) => void;
+  siteKey?: string;
+  apiEndpoint?: string;
+  captchaToken?: string;
 }
 
 interface ImageItem {
@@ -16,7 +19,7 @@ interface ImageItem {
   };
 }
 
-const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess }) => {
+const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndpoint, captchaToken }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');

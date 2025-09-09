@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealCaptcha 위젯 예제</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .captcha-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+        .code-example {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #007cba;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .success-message {
+            color: #28a745;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RealCaptcha 위젯 예제</h1>
+        <p>이 페이지는 RealCaptcha 위젯의 기본 사용법을 보여줍니다.</p>
+        
+        <h2>1. 기본 사용법</h2>
+        <div class="code-example">
+&lt;script src="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/realcaptcha-widget.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const captcha = new RealCaptcha({
+    siteKey: 'YOUR_SITE_KEY',
+    container: '#captcha-container',
+    onSuccess: function(response) {
+      console.log('캡차 성공:', response);
+    },
+    onError: function(error) {
+      console.error('캡차 오류:', error);
+    }
+  });
+&lt;/script&gt;
+        </div>
+        
+        <h2>2. 실제 위젯 테스트</h2>
+        <div class="captcha-container" id="captcha-container">
+            <!-- 캡차 위젯이 여기에 렌더링됩니다 -->
+        </div>
+        
+        <div id="result"></div>
+        
+        <h2>3. API 키 발급</h2>
+        <p>위젯을 사용하려면 먼저 API 키를 발급받아야 합니다:</p>
+        <ol>
+            <li><a href="https://dashboard.realcatcha.com" target="_blank">대시보드</a>에 로그인</li>
+            <li>API 키 생성</li>
+            <li>도메인 설정 (선택사항)</li>
+            <li>발급받은 Site Key를 위 코드의 'YOUR_SITE_KEY' 부분에 입력</li>
+        </ol>
+        
+        <h2>4. 서버 측 검증</h2>
+        <p>클라이언트에서 캡차를 성공적으로 완료한 후, 서버에서 토큰을 검증해야 합니다:</p>
+        <div class="code-example">
+POST https://api.realcatcha.com/api/verify-captcha
+Content-Type: application/json
+
+{
+  "site_key": "YOUR_SITE_KEY",
+  "secret_key": "YOUR_SECRET_KEY",
+  "captcha_token": "TOKEN_FROM_WIDGET",
+  "response": "CAPTCHA_RESPONSE"
+}
+        </div>
+    </div>
+
+    <!-- RealCaptcha 위젯 로드 -->
+    <script src="https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com/realcaptcha-widget.min.js"></script>
+    <script>
+        // 테스트용 API 키 (실제 사용 시에는 발급받은 키를 사용하세요)
+        const TEST_SITE_KEY = 'rc_test_1234567890abcdef';
+        
+        // 위젯 초기화
+        const captcha = new RealCaptcha({
+            siteKey: TEST_SITE_KEY,
+            container: '#captcha-container',
+            theme: 'light',
+            size: 'normal',
+            language: 'ko',
+            onSuccess: function(response) {
+                console.log('캡차 성공:', response);
+                document.getElementById('result').innerHTML = 
+                    '<div class="success-message">✅ 캡차 검증 성공!<br>토큰: ' + response.captcha_token + '</div>';
+            },
+            onError: function(error) {
+                console.error('캡차 오류:', error);
+                document.getElementById('result').innerHTML = 
+                    '<div class="error-message">❌ 캡차 오류: ' + error.message + '</div>';
+            }
+        });
+        
+        // 위젯 렌더링
+        captcha.render();
+    </script>
+</body>
+</html>

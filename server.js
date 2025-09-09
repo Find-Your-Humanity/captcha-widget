@@ -8,7 +8,6 @@ app.use(express.static('.')); // 정적 파일 서빙
 // RealCaptcha API 설정
 const REALCAPTCHA_API_URL = 'https://captcha-api.realcatcha.com';
 const API_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
-
 // 캡차 검증 엔드포인트
 app.post('/verify-captcha', async (req, res) => {
     try {

@@ -4,11 +4,14 @@ import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
 
 interface HandwritingCaptchaProps {
-  onSuccess?: () => void;
+  onSuccess?: (captchaResponse?: any) => void;
   samples?: string[];
+  siteKey?: string;
+  apiEndpoint?: string;
+  captchaToken?: string;
 }
 
-const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples }) => {
+const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples, siteKey, apiEndpoint, captchaToken }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
@@ -49,14 +52,79 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     context.lineWidth = 2;
     contextRef.current = context;
 
+    // 네이티브 터치 이벤트 리스너
+    const handleNativeTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      setIsDrawing(true);
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      context.beginPath();
+      context.moveTo(x, y);
+      behaviorCollector.current.startStroke(x, y);
+      
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      setDrawingHistory(prev => [...prev, imageData]);
+    };
+
+    const handleNativeTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isDrawing) return;
+      
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      context.lineTo(x, y);
+      context.stroke();
+      behaviorCollector.current.addPoint(x, y);
+    };
+
+    const handleNativeTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      setIsDrawing(false);
+      context.closePath();
+      behaviorCollector.current.endStroke();
+    };
+
+    // 네이티브 이벤트 리스너 추가
+    canvas.addEventListener('touchstart', handleNativeTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleNativeTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleNativeTouchEnd, { passive: false });
+
+    // 전체 문서에서도 터치 스크롤 방지
+    const preventScrolling = (e: TouchEvent) => {
+      if (e.target === canvas || canvas.contains(e.target as Node)) {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('touchstart', preventScrolling, { passive: false });
+    document.addEventListener('touchmove', preventScrolling, { passive: false });
+
     // 컴포넌트 마운트시 tracking 시작
     behaviorCollector.current.startTracking();
 
     // 컴포넌트 언마운트시 tracking 종료
     return () => {
+      canvas.removeEventListener('touchstart', handleNativeTouchStart);
+      canvas.removeEventListener('touchmove', handleNativeTouchMove);
+      canvas.removeEventListener('touchend', handleNativeTouchEnd);
+      canvas.removeEventListener('touchcancel', handleNativeTouchEnd);
+      document.removeEventListener('touchstart', preventScrolling);
+      document.removeEventListener('touchmove', preventScrolling);
       behaviorCollector.current.stopTracking();
     };
-  }, []);
+  }, [isDrawing]);
 
   // 샘플 이미지 새로고침 함수
   const refreshSamples = async () => {
@@ -114,16 +182,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     refreshSamples();
   }, []);
 
+  // 마우스 좌표 추출 함수
+  const getMouseCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    return {
+      x: e.nativeEvent.offsetX,
+      y: e.nativeEvent.offsetY
+    };
+  };
+
+  // 마우스 이벤트 핸들러들
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
-    const { offsetX, offsetY } = e.nativeEvent;
+    const { x, y } = getMouseCoordinates(e);
     contextRef.current?.beginPath();
-    contextRef.current?.moveTo(offsetX, offsetY);
+    contextRef.current?.moveTo(x, y);
+    behaviorCollector.current.startStroke(x, y);
     
-    // 행동 데이터 수집 시작
-    behaviorCollector.current.startStroke(offsetX, offsetY);
-    
-    // 그리기 시작할 때 현재 상태를 히스토리에 저장
     const canvas = canvasRef.current;
     if (canvas && contextRef.current) {
       const imageData = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
@@ -133,21 +207,18 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    const { offsetX, offsetY } = e.nativeEvent;
-    contextRef.current?.lineTo(offsetX, offsetY);
+    const { x, y } = getMouseCoordinates(e);
+    contextRef.current?.lineTo(x, y);
     contextRef.current?.stroke();
-
-    // 행동 데이터 수집 중
-    behaviorCollector.current.addPoint(offsetX, offsetY);
+    behaviorCollector.current.addPoint(x, y);
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
     contextRef.current?.closePath();
-    
-    // 행동 데이터 수집 종료
     behaviorCollector.current.endStroke();
   };
+
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -302,6 +373,11 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
+            style={{ 
+              touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none'
+            }}
           />
         </div>
       </div>

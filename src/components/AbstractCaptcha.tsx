@@ -9,10 +9,13 @@ interface RemoteImageItem {
 }
 
 interface AbstractCaptchaProps {
-  onSuccess?: () => void;
+  onSuccess?: (captchaResponse?: any) => void;
+  siteKey?: string;
+  apiEndpoint?: string;
+  captchaToken?: string;
 }
 
-const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess }) => {
+const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, apiEndpoint, captchaToken }) => {
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');

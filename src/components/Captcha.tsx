@@ -27,6 +27,15 @@ interface CaptchaProps {
   onComplete?: (result: any) => void;
 }
 
+interface CaptchaResult {
+  success: boolean;
+  captcha_token?: string; // 일회성 토큰
+  captcha_type?: string;
+  confidence_score?: number;
+  is_bot_detected?: boolean;
+  error?: string;
+}
+
 type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'abstract-captcha' | 'handwriting-captcha';
 
 // 세션 시퀀스 관리를 위한 로컬 스토리지 키
@@ -52,6 +61,7 @@ const Captcha: React.FC<CaptchaProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [captchaCount, setCaptchaCount] = useState<number>(0);
   const [handwritingSamples, setHandwritingSamples] = useState<string[]>([]);
+  const [captchaToken, setCaptchaToken] = useState<string>(''); // 일회성 토큰 저장
   const checkboxRef = useRef<HTMLDivElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMousePositionRef = useRef<{x: number; y: number; timestamp: number} | null>(null);
@@ -295,6 +305,11 @@ const Captcha: React.FC<CaptchaProps> = ({
         console.debug('[Captcha] summary /api/next-captcha', preview);
       } catch {}
 
+      // 캡차 토큰 저장
+      if (data.captcha_token) {
+        setCaptchaToken(data.captcha_token);
+      }
+
       // 결과에 따라 다음 캡차로 이동
       if (data.next_captcha === 'imagecaptcha') {
         setState('image-captcha');
@@ -305,6 +320,17 @@ const Captcha: React.FC<CaptchaProps> = ({
         setState('abstract-captcha');
       } else {
         setState('success'); // 추가 캡차 없이 통과
+        // 최종 성공 시 콜백 호출
+        if (onComplete) {
+          const result: CaptchaResult = {
+            success: true,
+            captcha_token: data.captcha_token,
+            captcha_type: data.captcha_type,
+            confidence_score: data.confidence_score,
+            is_bot_detected: data.is_bot_detected
+          };
+          onComplete(result);
+        }
       }
       inFlightRef.current = false;
     } catch (error) {
@@ -340,11 +366,11 @@ const Captcha: React.FC<CaptchaProps> = ({
   return (
     <div className="captcha-container">
       {state === 'image-captcha' ? (
-        <ImageCaptcha onSuccess={handleCaptchaSuccess} />
+        <ImageCaptcha onSuccess={handleCaptchaSuccess} siteKey={siteKey} apiEndpoint={apiEndpoint} captchaToken={captchaToken} />
       ) : state === 'abstract-captcha' ? (
-        <AbstractCaptcha onSuccess={handleCaptchaSuccess} />
+        <AbstractCaptcha onSuccess={handleCaptchaSuccess} siteKey={siteKey} apiEndpoint={apiEndpoint} captchaToken={captchaToken} />
       ) : state === 'handwriting-captcha' ? (
-        <HandwritingCaptcha onSuccess={handleCaptchaSuccess} samples={handwritingSamples} />
+        <HandwritingCaptcha onSuccess={handleCaptchaSuccess} samples={handwritingSamples} siteKey={siteKey} apiEndpoint={apiEndpoint} captchaToken={captchaToken} />
       ) : (
         <>
           <div className={`captcha-button ${state}`} onClick={handleButtonClick}>
