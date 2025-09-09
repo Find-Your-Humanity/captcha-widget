@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "buildTime": "2025-01-09T01:02:00.000Z",
+  "files": {
+    "realcaptcha-widget.min.js": {
+      "size": 69800,
+      "hash": "sha256-abc123def456",
+      "type": "application/javascript"
+    }
+  },
+  "cdn": {
+    "provider": "kakao",
+    "endpoint": "https://1df60f5faf3b4f2f992ced2edbae22ad.kakaoiedge.com",
+    "region": "kr-central-2"
+  },
+  "api": {
+    "endpoint": "https://api.realcatcha.com",
+    "version": "v1"
+  }
+}

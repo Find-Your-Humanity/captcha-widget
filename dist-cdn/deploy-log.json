@@ -1,10 +1,12 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-09-08T12:00:00.331Z",
+  "timestamp": "2025-09-09T01:03:12.981Z",
   "provider": "kakao",
-  "region": "kr-central-2",
-  "bucket": "realcatcha-cdn",
   "files": [
+    "deploy-log.json",
+    "example.html",
+    "hashes.json",
+    "metadata.json",
     "realcaptcha-widget.min.js"
   ],
   "urls": {

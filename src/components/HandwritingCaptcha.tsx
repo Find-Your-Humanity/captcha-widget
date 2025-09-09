@@ -4,11 +4,14 @@ import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
 
 interface HandwritingCaptchaProps {
-  onSuccess?: () => void;
+  onSuccess?: (captchaResponse?: any) => void;
   samples?: string[];
+  siteKey?: string;
+  apiEndpoint?: string;
+  captchaToken?: string;
 }
 
-const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples }) => {
+const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples, siteKey, apiEndpoint, captchaToken }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
