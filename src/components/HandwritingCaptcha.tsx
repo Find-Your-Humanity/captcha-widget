@@ -40,8 +40,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 이미 초기화된 경우 스킵 (캔버스 내용 보존)
-    if (canvas.width > 0 && canvas.height > 0) {
+    // contextRef가 이미 설정되어 있으면 스킵
+    if (contextRef.current) {
       console.log("🔧 [HandwritingCaptcha] 캔버스 이미 초기화됨, 스킵");
       return;
     }
@@ -67,6 +67,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     context.strokeStyle = '#000000';
     context.lineWidth = 2;
     contextRef.current = context;
+    
+    console.log("✅ [HandwritingCaptcha] 캔버스 초기화 완료");
   }, []);
 
   // behavior tracking 시작/종료 useEffect
@@ -183,13 +185,14 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
   
   // 그리기 (마우스/터치 공통 로직)
-  const draw = (x: number, y: number) => {
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current) return;
+    const { offsetX, offsetY } = e.nativeEvent;
     const context = contextRef.current;
     if (!context) return;
-    context.lineTo(x, y);
+    context.lineTo(offsetX, offsetY);
     context.stroke();
-    behaviorCollector.current.addPoint(x, y);
+    behaviorCollector.current.addPoint(offsetX, offsetY);
   };
 
   // 그리기 종료 (마우스/터치 공통) - 히스토리 저장
@@ -209,17 +212,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   // 이벤트 핸들러 연결
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    draw(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    draw(e);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
-    draw(x, y);
+    const context = contextRef.current;
+    if (!context) return;
+    context.lineTo(x, y);
+    context.stroke();
+    behaviorCollector.current.addPoint(x, y);
   };
 
 
