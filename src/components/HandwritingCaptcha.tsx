@@ -75,22 +75,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     };
   }, []);
 
-  // drawingHistory 상태와 캔버스를 동기화하는 useEffect
+  // drawingHistory 상태와 캔버스를 동기화하는 useEffect (undo 기능만을 위해)
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = contextRef.current;
     if (!canvas || !context) return;
 
-    // 히스토리의 가장 마지막 상태(현재 그림)를 가져옴
-    const lastImage = drawingHistory.length > 0 
-      ? drawingHistory[drawingHistory.length - 1] 
-      : null;
-
-    // 캔버스를 먼저 깨끗하게 지움
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 마지막으로 저장된 이미지가 있다면 캔버스에 다시 그려줌
-    if (lastImage) {
+    // drawingHistory가 변경된 경우에만 캔버스 업데이트 (undo 기능)
+    if (drawingHistory.length === 0) {
+      // 히스토리가 비어있으면 캔버스 지우기
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    } else {
+      // 히스토리의 가장 마지막 상태(현재 그림)를 가져옴
+      const lastImage = drawingHistory[drawingHistory.length - 1];
+      // 캔버스를 먼저 깨끗하게 지움
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      // 마지막으로 저장된 이미지를 캔버스에 다시 그려줌
       context.putImageData(lastImage, 0, 0);
     }
   }, [drawingHistory]);
@@ -194,6 +194,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
     
+    // 히스토리 저장 (캔버스는 그대로 유지)
     const canvas = canvasRef.current;
     if (canvas && contextRef.current) {
       const imageData = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
