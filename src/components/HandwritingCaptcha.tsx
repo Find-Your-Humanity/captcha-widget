@@ -50,9 +50,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     context.beginPath();
     context.moveTo(x, y);
     behaviorCollector.current.startStroke(x, y);
-    
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    setDrawingHistory(prev => [...prev, imageData]);
   }, []);
 
   const handleNativeTouchMove = useCallback((e: TouchEvent) => {
@@ -84,10 +81,15 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     setIsDrawing(false);
     
     const context = contextRef.current;
-    if (!context) return;
+    const canvas = canvasRef.current;
+    if (!context || !canvas) return;
     
     context.closePath();
     behaviorCollector.current.endStroke();
+    
+    // 그리기 완료 후 히스토리에 저장
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    setDrawingHistory(prev => [...prev, imageData]);
   }, []);
 
   // 샘플이 변경되면 이미지 상태 초기화
@@ -101,9 +103,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 이미 초기화된 경우 스킵 (캔버스 상태 보존)
-    if (canvas.width > 0 && canvas.height > 0) return;
-
     // 캔버스 크기 설정
     canvas.width = canvas.offsetWidth * 2;
     canvas.height = canvas.offsetHeight * 2;
@@ -111,7 +110,12 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     canvas.style.height = `${canvas.offsetHeight}px`;
 
     // willReadFrequently 속성 추가로 Canvas2D 경고 해결
-    const context = canvas.getContext('2d', { willReadFrequently: true });
+    // 캔버스 크기를 변경한 후 새로운 컨텍스트 생성
+    const context = canvas.getContext('2d', { 
+      willReadFrequently: true,
+      alpha: true,
+      desynchronized: false
+    });
     if (!context) return;
 
     context.scale(2, 2);
@@ -228,12 +232,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     contextRef.current?.beginPath();
     contextRef.current?.moveTo(x, y);
     behaviorCollector.current.startStroke(x, y);
-    
-    const canvas = canvasRef.current;
-    if (canvas && contextRef.current) {
-      const imageData = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
-      setDrawingHistory(prev => [...prev, imageData]);
-    }
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -249,15 +247,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     setIsDrawing(false);
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
+    
+    // 그리기 완료 후 히스토리에 저장
+    const canvas = canvasRef.current;
+    if (canvas && contextRef.current) {
+      const imageData = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
+      setDrawingHistory(prev => [...prev, imageData]);
+    }
   };
 
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!canvas || !contextRef.current) return;
+    
+    // 초기화된 컨텍스트 사용
+    contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setDrawingHistory([]);
     
     // 행동 데이터 초기화
