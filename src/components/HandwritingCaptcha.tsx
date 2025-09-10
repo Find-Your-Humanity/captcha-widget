@@ -41,8 +41,13 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     if (!canvas) return;
 
     // 이미 초기화된 경우 스킵 (캔버스 내용 보존)
-    if (canvas.width > 0 && canvas.height > 0) return;
+    if (canvas.width > 0 && canvas.height > 0) {
+      console.log("🔧 [HandwritingCaptcha] 캔버스 이미 초기화됨, 스킵");
+      return;
+    }
 
+    console.log("🔧 [HandwritingCaptcha] 캔버스 초기화 시작");
+    
     // 캔버스 크기 설정 (한 번만 실행)
     canvas.width = canvas.offsetWidth * 2;
     canvas.height = canvas.offsetHeight * 2;
