@@ -134,6 +134,26 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     };
   }, []);
 
+  // drawingHistory 상태와 캔버스를 동기화하는 useEffect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = contextRef.current;
+    if (!canvas || !context) return;
+
+    // 히스토리의 가장 마지막 상태(현재 그림)를 가져옴
+    const lastImage = drawingHistory.length > 0 
+      ? drawingHistory[drawingHistory.length - 1] 
+      : null;
+
+    // 캔버스를 먼저 깨끗하게 지움
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 마지막으로 저장된 이미지가 있다면 캔버스에 다시 그려줌
+    if (lastImage) {
+      context.putImageData(lastImage, 0, 0);
+    }
+  }, [drawingHistory]);
+
   // 샘플 이미지 새로고침 함수
   const refreshSamples = async () => {
     try {
@@ -230,12 +250,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
 
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !contextRef.current) return;
-    
-    // 초기화된 컨텍스트 사용
-    contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setDrawingHistory([]);
+    // useEffect가 자동으로 캔버스를 업데이트함
     
     // 행동 데이터 초기화
     behaviorCollector.current.reset();
@@ -244,21 +260,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const undoLastStroke = () => {
     if (drawingHistory.length === 0) return;
     
-    const canvas = canvasRef.current;
-    if (!canvas || !contextRef.current) return;
-    
     // 마지막 히스토리 제거
     const newHistory = drawingHistory.slice(0, -1);
     setDrawingHistory(newHistory);
-    
-    // 캔버스 초기화
-    contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 이전 상태로 복원
-    if (newHistory.length > 0) {
-      const lastImageData = newHistory[newHistory.length - 1];
-      contextRef.current.putImageData(lastImageData, 0, 0);
-    }
+    // useEffect가 자동으로 캔버스를 업데이트함
   };
 
   const handleVerify = async () => {
