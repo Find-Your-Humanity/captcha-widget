@@ -28,65 +28,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const ttlExpiredRef = useRef(false);
   const [challengeId, setChallengeId] = useState<string | null>(null);
 
-  // React 터치 이벤트 핸들러들
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    isDrawingRef.current = true;
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    
-    const context = contextRef.current;
-    if (!context) return;
-    
-    context.beginPath();
-    context.moveTo(x, y);
-    behaviorCollector.current.startStroke(x, y);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDrawingRef.current) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    
-    const context = contextRef.current;
-    if (!context) return;
-    
-    context.lineTo(x, y);
-    context.stroke();
-    behaviorCollector.current.addPoint(x, y);
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDrawingRef.current) return;
-    
-    isDrawingRef.current = false;
-    
-    const context = contextRef.current;
-    const canvas = canvasRef.current;
-    if (!context || !canvas) return;
-    
-    context.closePath();
-    behaviorCollector.current.endStroke();
-    
-    // 그리기 완료 후 히스토리에 저장
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    setDrawingHistory(prev => [...prev, imageData]);
-  };
 
   // 샘플이 변경되면 이미지 상태 초기화
   useEffect(() => {
@@ -210,42 +151,69 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     refreshSamples();
   }, []);
 
-  // 마우스 좌표 추출 함수
-  const getMouseCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    return {
-      x: e.nativeEvent.offsetX,
-      y: e.nativeEvent.offsetY
-    };
+  // 그리기 시작 (마우스) - 상태 업데이트 로직 제거
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const context = contextRef.current;
+    if (!context) return;
+    isDrawingRef.current = true;
+    const { offsetX, offsetY } = e.nativeEvent;
+    context.beginPath();
+    context.moveTo(offsetX, offsetY);
+    behaviorCollector.current.startStroke(offsetX, offsetY);
   };
 
-  // 마우스 이벤트 핸들러들
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // 그리기 시작 (터치) - 상태 업데이트 로직 제거
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const context = contextRef.current;
+    const canvas = canvasRef.current;
+    if (!context || !canvas) return;
     isDrawingRef.current = true;
-    const { x, y } = getMouseCoordinates(e);
-    contextRef.current?.beginPath();
-    contextRef.current?.moveTo(x, y);
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    context.beginPath();
+    context.moveTo(x, y);
     behaviorCollector.current.startStroke(x, y);
   };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  
+  // 그리기 (마우스/터치 공통 로직)
+  const draw = (x: number, y: number) => {
     if (!isDrawingRef.current) return;
-    const { x, y } = getMouseCoordinates(e);
-    contextRef.current?.lineTo(x, y);
-    contextRef.current?.stroke();
+    const context = contextRef.current;
+    if (!context) return;
+    context.lineTo(x, y);
+    context.stroke();
     behaviorCollector.current.addPoint(x, y);
   };
 
+  // 그리기 종료 (마우스/터치 공통) - 히스토리 저장
   const stopDrawing = () => {
+    if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
     
-    // 그리기 완료 후 히스토리에 저장
     const canvas = canvasRef.current;
     if (canvas && contextRef.current) {
       const imageData = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
       setDrawingHistory(prev => [...prev, imageData]);
     }
+  };
+
+  // 이벤트 핸들러 연결
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    draw(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    draw(x, y);
   };
 
 
@@ -384,13 +352,13 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             ref={canvasRef}
             className="drawing-canvas"
             onMouseDown={startDrawing}
-            onMouseMove={draw}
+            onMouseMove={handleMouseMove}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
+            onTouchEnd={stopDrawing}
+            onTouchCancel={stopDrawing}
             style={{ 
               touchAction: 'none',
               userSelect: 'none',
