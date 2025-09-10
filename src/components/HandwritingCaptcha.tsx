@@ -38,12 +38,14 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // 캔버스 크기 설정 (한 번만 실행)
     canvas.width = canvas.offsetWidth * 2;
     canvas.height = canvas.offsetHeight * 2;
     canvas.style.width = `${canvas.offsetWidth}px`;
     canvas.style.height = `${canvas.offsetHeight}px`;
 
-    const context = canvas.getContext('2d');
+    // willReadFrequently 속성 추가로 Canvas2D 경고 해결
+    const context = canvas.getContext('2d', { willReadFrequently: true });
     if (!context) return;
 
     context.scale(2, 2);
@@ -124,7 +126,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       document.removeEventListener('touchmove', preventScrolling);
       behaviorCollector.current.stopTracking();
     };
-  }, [isDrawing]);
+  }, []); // 의존성 배열에서 isDrawing 제거
 
   // 샘플 이미지 새로고침 함수
   const refreshSamples = async () => {
