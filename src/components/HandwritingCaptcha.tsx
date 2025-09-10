@@ -12,7 +12,6 @@ interface HandwritingCaptchaProps {
 }
 
 const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples, siteKey, apiEndpoint, captchaToken }) => {
-  const [isDrawing, setIsDrawing] = useState(false);
   const isDrawingRef = useRef(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
@@ -38,7 +37,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     if (!canvas) return;
     
     isDrawingRef.current = true;
-    setIsDrawing(true);
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
@@ -78,7 +76,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     e.stopPropagation();
     
     isDrawingRef.current = false;
-    setIsDrawing(false);
     
     const context = contextRef.current;
     const canvas = canvasRef.current;
@@ -103,14 +100,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 캔버스 크기 설정
+    // 이미 초기화된 경우 스킵 (캔버스 내용 보존)
+    if (canvas.width > 0 && canvas.height > 0) return;
+
+    // 캔버스 크기 설정 (한 번만 실행)
     canvas.width = canvas.offsetWidth * 2;
     canvas.height = canvas.offsetHeight * 2;
     canvas.style.width = `${canvas.offsetWidth}px`;
     canvas.style.height = `${canvas.offsetHeight}px`;
 
     // willReadFrequently 속성 추가로 Canvas2D 경고 해결
-    // 캔버스 크기를 변경한 후 새로운 컨텍스트 생성
     const context = canvas.getContext('2d', { 
       willReadFrequently: true,
       alpha: true,
@@ -227,7 +226,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   // 마우스 이벤트 핸들러들
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     isDrawingRef.current = true;
-    setIsDrawing(true);
     const { x, y } = getMouseCoordinates(e);
     contextRef.current?.beginPath();
     contextRef.current?.moveTo(x, y);
@@ -244,7 +242,6 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   const stopDrawing = () => {
     isDrawingRef.current = false;
-    setIsDrawing(false);
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
     
