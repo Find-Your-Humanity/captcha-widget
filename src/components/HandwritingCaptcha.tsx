@@ -13,6 +13,7 @@ interface HandwritingCaptchaProps {
 
 const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples, siteKey, apiEndpoint, captchaToken }) => {
   const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -59,6 +60,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       e.preventDefault();
       e.stopPropagation();
       
+      isDrawingRef.current = true;
       setIsDrawing(true);
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
@@ -76,7 +78,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const handleNativeTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!isDrawing) return;
+      if (!isDrawingRef.current) return;
       
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
@@ -92,6 +94,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       e.preventDefault();
       e.stopPropagation();
       
+      isDrawingRef.current = false;
       setIsDrawing(false);
       context.closePath();
       behaviorCollector.current.endStroke();
@@ -132,17 +135,17 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const refreshSamples = async () => {
     try {
       setLoading(true);
-             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
-         (process.env.NODE_ENV === 'production' 
-           ? 'https://api.realcatcha.com'
-           : 'http://localhost:8000');
-             const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { 
-         method: 'POST', 
-         headers: { 
-           'Content-Type': 'application/json',
-           'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'
-         } 
-       });
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://api.realcatcha.com'
+          : 'http://localhost:8000');
+      const resp = await fetch(`${apiBaseUrl}/api/handwriting-challenge`, { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(siteKey ? { 'X-API-Key': siteKey } : {})
+        } 
+      });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { samples?: string[]; ttl?: number; challenge_id?: string } = await resp.json();
       // 새 샘플로 교체
@@ -194,6 +197,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   // 마우스 이벤트 핸들러들
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    isDrawingRef.current = true;
     setIsDrawing(true);
     const { x, y } = getMouseCoordinates(e);
     contextRef.current?.beginPath();
@@ -208,7 +212,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
+    if (!isDrawingRef.current) return;
     const { x, y } = getMouseCoordinates(e);
     contextRef.current?.lineTo(x, y);
     contextRef.current?.stroke();
@@ -216,6 +220,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
 
   const stopDrawing = () => {
+    isDrawingRef.current = false;
     setIsDrawing(false);
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
@@ -293,7 +298,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       const requestBody = {
         image_base64: imageDataUrl,
         user_id: null,  // TODO: 실제 사용자 ID로 교체
-        api_key: 'rc_live_f49a055d62283fd02e8203ccaba70fc2',  // API 키를 body에도 포함
+        api_key: siteKey || '',  // API 키를 body에도 포함
         challenge_id: challengeId || '', // 챌린지 ID 포함
         // 선택: 추가 컨텍스트 전송 가능
         // keywords,  // 필요시 활성화
@@ -306,7 +311,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
         credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'X-API-Key': 'rc_live_f49a055d62283fd02e8203ccaba70fc2'  // API 키를 헤더로 전송
+          ...(siteKey ? { 'X-API-Key': siteKey } : {})  // API 키를 헤더로 전송
         },
         body: JSON.stringify(requestBody)
       });
