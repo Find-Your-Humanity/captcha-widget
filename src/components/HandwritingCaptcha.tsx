@@ -13,6 +13,7 @@ interface HandwritingCaptchaProps {
 
 const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samples, siteKey, apiEndpoint, captchaToken }) => {
   const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const [drawingData, setDrawingData] = useState<string>('');
   const [keywords, setKeywords] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -57,6 +58,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       e.preventDefault();
       e.stopPropagation();
       
+      isDrawingRef.current = true;
       setIsDrawing(true);
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
@@ -74,7 +76,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     const handleNativeTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!isDrawing) return;
+      if (!isDrawingRef.current) return;
       
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
@@ -90,6 +92,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       e.preventDefault();
       e.stopPropagation();
       
+      isDrawingRef.current = false;
       setIsDrawing(false);
       context.closePath();
       behaviorCollector.current.endStroke();
@@ -124,7 +127,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       document.removeEventListener('touchmove', preventScrolling);
       behaviorCollector.current.stopTracking();
     };
-  }, [isDrawing]);
+  }, []);
 
   // 샘플 이미지 새로고침 함수
   const refreshSamples = async () => {
@@ -192,6 +195,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
 
   // 마우스 이벤트 핸들러들
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    isDrawingRef.current = true;
     setIsDrawing(true);
     const { x, y } = getMouseCoordinates(e);
     contextRef.current?.beginPath();
@@ -206,7 +210,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
+    if (!isDrawingRef.current) return;
     const { x, y } = getMouseCoordinates(e);
     contextRef.current?.lineTo(x, y);
     contextRef.current?.stroke();
@@ -214,6 +218,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   };
 
   const stopDrawing = () => {
+    isDrawingRef.current = false;
     setIsDrawing(false);
     contextRef.current?.closePath();
     behaviorCollector.current.endStroke();
