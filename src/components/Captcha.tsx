@@ -242,20 +242,15 @@ const Captcha: React.FC<CaptchaProps> = ({
   // FastAPI 연동 함수 수정: behaviorData 객체를 바로 서버로 전송
   const inFlightRef = useRef<boolean>(false);
   const handleBehaviorAnalysis = async () => {
-    console.log('🚀 [DEBUG] handleBehaviorAnalysis 함수 시작');
     try {
       if (inFlightRef.current) {
         console.debug('[Captcha] next-captcha call suppressed: request already in-flight');
         return;
       }
       inFlightRef.current = true;
-      console.log('🔍 [DEBUG] API 호출 시작');
 
       // props에서 받은 API 엔드포인트 사용
       const apiBaseUrl = apiEndpoint || 'https://api.realcatcha.com';
-      console.log('🌐 API 엔드포인트:', apiBaseUrl);
-      console.log('🔑 API 키:', siteKey ? '제공됨' : '없음');
-      console.log('🔗 API URL:', `${apiBaseUrl}/api/next-captcha`);
       
       const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const bd = behaviorDataRef.current;
@@ -295,13 +290,6 @@ const Captcha: React.FC<CaptchaProps> = ({
       const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       const durationMs = Math.round(t1 - t0);
       console.debug('[Captcha] payload /api/next-captcha', data);
-      
-      // 디버깅: API 응답 상세 로그
-      console.log('🔍 [DEBUG] API 응답 전체:', data);
-      console.log('🔍 [DEBUG] confidence_score:', data.confidence_score, '타입:', typeof data.confidence_score);
-      console.log('🔍 [DEBUG] confidence_score <= 9:', data.confidence_score <= 9);
-      console.log('🔍 [DEBUG] is_blocked:', data.is_blocked);
-      console.log('🔍 [DEBUG] next_captcha:', data.next_captcha);
       try {
         const preview = {
           status: response.status,
@@ -324,9 +312,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       }
 
       // 봇 차단 확인
-      console.log('🔍 [DEBUG] is_blocked 체크:', data.is_blocked);
       if (data.is_blocked) {
-        console.log('🚫 [DEBUG] is_blocked = true, 에러 상태로 변경');
         setState('error');
         setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
         setIsDisabled(true); // 컴포넌트 비활성화
@@ -334,11 +320,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       }
 
       // confidence_score가 0-9이면 항상 에러 상태로 처리
-      console.log('🔍 [DEBUG] confidence_score 체크 시작');
-      console.log('🔍 [DEBUG] data.confidence_score !== undefined:', data.confidence_score !== undefined);
-      console.log('🔍 [DEBUG] data.confidence_score <= 9:', data.confidence_score <= 9);
       if (data.confidence_score !== undefined && data.confidence_score <= 9) {
-        console.log('🚫 [DEBUG] confidence_score <= 9, 에러 상태로 변경');
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setState('error');
@@ -350,25 +332,17 @@ const Captcha: React.FC<CaptchaProps> = ({
         }
         return;
       }
-      
-      console.log('✅ [DEBUG] confidence_score > 9, 다음 캡차 처리로 진행');
 
       // 결과에 따라 다음 캡차로 이동
-      console.log('🔍 [DEBUG] next_captcha 처리 시작:', data.next_captcha);
       if (data.next_captcha === 'imagecaptcha') {
-        console.log('🖼️ [DEBUG] imagecaptcha로 이동');
         setState('image-captcha');
       } else if (data.next_captcha === 'handwritingcaptcha') {
-        console.log('✍️ [DEBUG] handwritingcaptcha로 이동');
         setHandwritingSamples(Array.isArray(data.handwriting_samples) ? data.handwriting_samples : []);
         setState('handwriting-captcha');
       } else if (data.next_captcha === 'abstractcaptcha') {
-        console.log('🎨 [DEBUG] abstractcaptcha로 이동');
         setState('abstract-captcha');
       } else {
         // 기타 경우 통과 처리 (next_captcha가 null, undefined, 빈 문자열 등)
-        console.log('✅ [DEBUG] next_captcha가 기타 값, 성공 상태로 변경');
-        console.log('🔍 [DEBUG] next_captcha 값:', data.next_captcha, '타입:', typeof data.next_captcha);
         setState('success');
         if (onComplete) {
           const result: CaptchaResult = {
@@ -381,10 +355,9 @@ const Captcha: React.FC<CaptchaProps> = ({
           onComplete(result);
         }
       }
-      console.log('✅ [DEBUG] handleBehaviorAnalysis 함수 정상 완료');
       inFlightRef.current = false;
     } catch (error) {
-      console.error('❌ [DEBUG] handleBehaviorAnalysis 에러 발생:', error);
+      console.error('Error:', error);
       setState('error');
       setErrorMessage('서버 연결에 실패했습니다. 다시 시도해주세요.');
       inFlightRef.current = false;
