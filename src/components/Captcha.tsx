@@ -316,6 +316,7 @@ const Captcha: React.FC<CaptchaProps> = ({
         setState('error');
         setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
         setIsDisabled(true); // 컴포넌트 비활성화
+        inFlightRef.current = false;
         return;
       }
 
@@ -330,6 +331,7 @@ const Captcha: React.FC<CaptchaProps> = ({
         if (newAttempts >= 3) {
           setIsDisabled(true);
         }
+        inFlightRef.current = false;
         return;
       }
 
