@@ -354,15 +354,21 @@ const Captcha: React.FC<CaptchaProps> = ({
       console.log('✅ [DEBUG] confidence_score > 9, 다음 캡차 처리로 진행');
 
       // 결과에 따라 다음 캡차로 이동
+      console.log('🔍 [DEBUG] next_captcha 처리 시작:', data.next_captcha);
       if (data.next_captcha === 'imagecaptcha') {
+        console.log('🖼️ [DEBUG] imagecaptcha로 이동');
         setState('image-captcha');
       } else if (data.next_captcha === 'handwritingcaptcha') {
+        console.log('✍️ [DEBUG] handwritingcaptcha로 이동');
         setHandwritingSamples(Array.isArray(data.handwriting_samples) ? data.handwriting_samples : []);
         setState('handwriting-captcha');
       } else if (data.next_captcha === 'abstractcaptcha') {
+        console.log('🎨 [DEBUG] abstractcaptcha로 이동');
         setState('abstract-captcha');
       } else {
         // 기타 경우 통과 처리 (next_captcha가 null, undefined, 빈 문자열 등)
+        console.log('✅ [DEBUG] next_captcha가 기타 값, 성공 상태로 변경');
+        console.log('🔍 [DEBUG] next_captcha 값:', data.next_captcha, '타입:', typeof data.next_captcha);
         setState('success');
         if (onComplete) {
           const result: CaptchaResult = {
