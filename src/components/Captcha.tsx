@@ -62,6 +62,9 @@ const Captcha: React.FC<CaptchaProps> = ({
   const [captchaCount, setCaptchaCount] = useState<number>(0);
   const [handwritingSamples, setHandwritingSamples] = useState<string[]>([]);
   const [captchaToken, setCaptchaToken] = useState<string>(''); // 일회성 토큰 저장
+  const [sessionId, setSessionId] = useState<string>(''); // 체크박스 세션 ID
+  const [attempts, setAttempts] = useState<number>(0); // 시도 횟수 추적
+  const [isDisabled, setIsDisabled] = useState<boolean>(false); // 컴포넌트 비활성화 상태
   const checkboxRef = useRef<HTMLDivElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMousePositionRef = useRef<{x: number; y: number; timestamp: number} | null>(null);
@@ -224,17 +227,15 @@ const Captcha: React.FC<CaptchaProps> = ({
     e.stopPropagation();
     e.preventDefault();
     
-    if (state === 'initial') {
+    // 비활성화된 상태에서는 클릭 무시
+    if (isDisabled) {
+      return;
+    }
+    
+    if (state === 'initial' || state === 'error') {
       setState('loading');
-      setTimeout(() => {
-        setState('success');
-        setTimeout(() => {
-          handleBehaviorAnalysis(); // 여기서 AI 결정 함수 호출
-        }, 1000);
-      }, 2000);
-    } else if (state === 'error') {
-      setState('initial');
       setErrorMessage('');
+      handleBehaviorAnalysis(); // 바로 API 호출 (성공 애니메이션 없이)
     }
   };
 
@@ -258,7 +259,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       const bd = behaviorDataRef.current;
       const payload = { 
         behavior_data: bd,
-        site_key: siteKey // API 키 포함
+        session_id: sessionId || null
       };
       
       try {
@@ -305,9 +306,20 @@ const Captcha: React.FC<CaptchaProps> = ({
         console.debug('[Captcha] summary /api/next-captcha', preview);
       } catch {}
 
-      // 캡차 토큰 저장
+      // 캡차 토큰 및 세션 ID 저장
       if (data.captcha_token) {
         setCaptchaToken(data.captcha_token);
+      }
+      if (data.session_id) {
+        setSessionId(data.session_id);
+      }
+
+      // 봇 차단 확인
+      if (data.is_blocked) {
+        setState('error');
+        setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
+        setIsDisabled(true); // 컴포넌트 비활성화
+        return;
       }
 
       // 결과에 따라 다음 캡차로 이동
@@ -318,9 +330,34 @@ const Captcha: React.FC<CaptchaProps> = ({
         setState('handwriting-captcha');
       } else if (data.next_captcha === 'abstractcaptcha') {
         setState('abstract-captcha');
-      } else {
-        setState('success'); // 추가 캡차 없이 통과
+      } else if (data.next_captcha === null || data.next_captcha === undefined) {
+        // next_captcha가 null/undefined인 경우 통과
+        setState('success');
         // 최종 성공 시 콜백 호출
+        if (onComplete) {
+          const result: CaptchaResult = {
+            success: true,
+            captcha_token: data.captcha_token,
+            captcha_type: data.captcha_type,
+            confidence_score: data.confidence_score,
+            is_bot_detected: data.is_bot_detected
+          };
+          onComplete(result);
+        }
+      } else if (data.next_captcha === '') {
+        // next_captcha가 빈 문자열인 경우 봇 의심 (confidence_score 9 이하)
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        setState('error');
+        setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
+        
+        // 3번 시도 후 컴포넌트 비활성화
+        if (newAttempts >= 3) {
+          setIsDisabled(true);
+        }
+      } else {
+        // 기타 경우 통과 처리
+        setState('success');
         if (onComplete) {
           const result: CaptchaResult = {
             success: true,
@@ -348,6 +385,11 @@ const Captcha: React.FC<CaptchaProps> = ({
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {
+    // 비활성화된 상태에서는 클릭 무시
+    if (isDisabled) {
+      return;
+    }
+    
     if (state === 'initial' && checkboxRef.current && !checkboxRef.current.contains(e.target as Node)) {
       const target = e.target as HTMLElement;
       if (!target.closest('.refresh-button')) {
@@ -373,7 +415,7 @@ const Captcha: React.FC<CaptchaProps> = ({
         <HandwritingCaptcha onSuccess={handleCaptchaSuccess} samples={handwritingSamples} siteKey={siteKey} apiEndpoint={apiEndpoint} captchaToken={captchaToken} />
       ) : (
         <>
-          <div className={`captcha-button ${state}`} onClick={handleButtonClick}>
+          <div className={`captcha-button ${state} ${isDisabled ? 'disabled' : ''}`} onClick={handleButtonClick}>
             <div className="captcha-left">
               {state === 'initial' && (
                 <div className="checkbox" ref={checkboxRef} onClick={handleCheckboxClick}>
@@ -396,9 +438,14 @@ const Captcha: React.FC<CaptchaProps> = ({
                   </svg>
                 </div>
               )}
-              {state === 'error' && (
+              {state === 'error' && !isDisabled && (
                 <div className="checkbox error" ref={checkboxRef} onClick={handleCheckboxClick}>
                   <div className="checkbox-inner error"></div>
+                </div>
+              )}
+              {isDisabled && (
+                <div className="checkbox disabled">
+                  <div className="checkbox-inner disabled">✕</div>
                 </div>
               )}
             </div>

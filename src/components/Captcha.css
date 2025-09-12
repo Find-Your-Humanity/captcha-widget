@@ -23,6 +23,17 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
+.captcha-button.disabled {
+  background-color: #f5f5f5;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.captcha-button.disabled:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .captcha-left {
   display: flex;
   align-items: center;
@@ -50,6 +61,13 @@
   border-color: #f44336;
 }
 
+.checkbox.disabled {
+  border-color: #ccc;
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .checkbox-inner {
   width: 12px;
   height: 12px;
@@ -60,6 +78,12 @@
 
 .checkbox-inner.error {
   background-color: transparent;
+}
+
+.checkbox-inner.disabled {
+  color: #999;
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .loading-spinner {
