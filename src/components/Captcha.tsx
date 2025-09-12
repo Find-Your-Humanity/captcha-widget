@@ -322,30 +322,8 @@ const Captcha: React.FC<CaptchaProps> = ({
         return;
       }
 
-      // 결과에 따라 다음 캡차로 이동
-      if (data.next_captcha === 'imagecaptcha') {
-        setState('image-captcha');
-      } else if (data.next_captcha === 'handwritingcaptcha') {
-        setHandwritingSamples(Array.isArray(data.handwriting_samples) ? data.handwriting_samples : []);
-        setState('handwriting-captcha');
-      } else if (data.next_captcha === 'abstractcaptcha') {
-        setState('abstract-captcha');
-      } else if (data.next_captcha === null || data.next_captcha === undefined) {
-        // next_captcha가 null/undefined인 경우 통과
-        setState('success');
-        // 최종 성공 시 콜백 호출
-        if (onComplete) {
-          const result: CaptchaResult = {
-            success: true,
-            captcha_token: data.captcha_token,
-            captcha_type: data.captcha_type,
-            confidence_score: data.confidence_score,
-            is_bot_detected: data.is_bot_detected
-          };
-          onComplete(result);
-        }
-      } else if (data.next_captcha === '') {
-        // next_captcha가 빈 문자열인 경우 봇 의심 (confidence_score 9 이하)
+      // confidence_score가 0-9이면 항상 에러 상태로 처리
+      if (data.confidence_score !== undefined && data.confidence_score <= 9) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setState('error');
@@ -355,8 +333,19 @@ const Captcha: React.FC<CaptchaProps> = ({
         if (newAttempts >= 3) {
           setIsDisabled(true);
         }
+        return;
+      }
+
+      // 결과에 따라 다음 캡차로 이동
+      if (data.next_captcha === 'imagecaptcha') {
+        setState('image-captcha');
+      } else if (data.next_captcha === 'handwritingcaptcha') {
+        setHandwritingSamples(Array.isArray(data.handwriting_samples) ? data.handwriting_samples : []);
+        setState('handwriting-captcha');
+      } else if (data.next_captcha === 'abstractcaptcha') {
+        setState('abstract-captcha');
       } else {
-        // 기타 경우 통과 처리
+        // 기타 경우 통과 처리 (next_captcha가 null, undefined, 빈 문자열 등)
         setState('success');
         if (onComplete) {
           const result: CaptchaResult = {
