@@ -262,6 +262,14 @@ class HandwritingBehaviorCollector {
     window.URL.revokeObjectURL(url);
   }
 
+  public getMetrics(): WritingMetrics {
+    return this.metrics;
+  }
+
+  public getStartTime(): number {
+    return this.metrics.startTime;
+  }
+
   public reset(): void {
     this.currentStroke = [];
     this.metrics = {

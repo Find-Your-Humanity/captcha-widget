@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
+import { sendBehaviorDataToMongo } from '../utils/behaviorDataSender';
 
 interface ImageCaptchaProps {
   onSuccess?: (captchaResponse?: any) => void;
@@ -128,6 +129,25 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
       const data: { success?: boolean; attempts?: number; downshift?: boolean } = await resp.json();
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
+      
+      // 행동 데이터 수집 및 전송
+      try {
+        const behaviorData = {
+          behavior_data: behaviorCollector.current.getMetrics(),
+          pageEvents: {
+            enterTime: behaviorCollector.current.getStartTime(),
+            exitTime: Date.now(),
+            totalTime: Date.now() - behaviorCollector.current.getStartTime()
+          },
+          captcha_type: "image"
+        };
+        
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+      } catch (behaviorError) {
+        console.error('행동 데이터 전송 실패:', behaviorError);
+        // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+      }
+      
       if (ok) {
         // 성공: 새로고침하지 않고 성공 상태 유지
         setUiState('success');

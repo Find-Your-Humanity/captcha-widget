@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './AbstractCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
+import { sendBehaviorDataToMongo } from '../utils/behaviorDataSender';
 
 interface RemoteImageItem {
   id: number;
@@ -113,6 +114,25 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
       console.debug('[AbstractCaptcha] payload /api/abstract-verify', data);
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
+      
+      // 행동 데이터 수집 및 전송
+      try {
+        const behaviorData = {
+          behavior_data: behaviorCollector.current.getMetrics(),
+          pageEvents: {
+            enterTime: behaviorCollector.current.getStartTime(),
+            exitTime: Date.now(),
+            totalTime: Date.now() - behaviorCollector.current.getStartTime()
+          },
+          captcha_type: "abstract"
+        };
+        
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+      } catch (behaviorError) {
+        console.error('행동 데이터 전송 실패:', behaviorError);
+        // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+      }
+      
       if (ok) {
         setUiState('success');
         console.log('Abstract captcha verified successfully!');

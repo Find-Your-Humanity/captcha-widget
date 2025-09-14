@@ -215,6 +215,14 @@ class ImageBehaviorCollector {
     }
   }
 
+  public getMetrics(): ImageBehaviorMetrics {
+    return this.metrics;
+  }
+
+  public getStartTime(): number {
+    return this.metrics.startTime;
+  }
+
   public downloadMetrics(filename?: string): void {
     const data = JSON.stringify(this.metrics, null, 2);
     const blob = new Blob([data], { type: 'application/json' });

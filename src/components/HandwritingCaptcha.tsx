@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './HandwritingCaptcha.css';
 import HandwritingBehaviorCollector from './HandwritingBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
+import { sendBehaviorDataToMongo } from '../utils/behaviorDataSender';
 
 interface HandwritingCaptchaProps {
   onSuccess?: (captchaResponse?: any) => void;
@@ -314,6 +315,24 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       if (data.success) {
         setUiState('success');
         behaviorCollector.current.setVerificationResult(true);
+        
+        // 행동 데이터 수집 및 전송
+        try {
+          const behaviorData = {
+            behavior_data: behaviorCollector.current.getMetrics(),
+            pageEvents: {
+              enterTime: behaviorCollector.current.getStartTime(),
+              exitTime: Date.now(),
+              totalTime: Date.now() - behaviorCollector.current.getStartTime()
+            }
+          };
+          
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+        } catch (behaviorError) {
+          console.error('행동 데이터 전송 실패:', behaviorError);
+          // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+        }
+        
         const envTarget = process.env.REACT_APP_SUCCESS_REDIRECT_URL;
         const targetUrl = envTarget || data.redirect_url || document.referrer || window.location.origin;
         if (typeof window !== 'undefined') {
@@ -322,6 +341,24 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       } else {
         setUiState('error');
         behaviorCollector.current.setVerificationResult(false);
+        
+        // 행동 데이터 수집 및 전송 (실패한 경우에도)
+        try {
+          const behaviorData = {
+            behavior_data: behaviorCollector.current.getMetrics(),
+            pageEvents: {
+              enterTime: behaviorCollector.current.getStartTime(),
+              exitTime: Date.now(),
+              totalTime: Date.now() - behaviorCollector.current.getStartTime()
+            }
+          };
+          
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+        } catch (behaviorError) {
+          console.error('행동 데이터 전송 실패:', behaviorError);
+          // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+        }
+        
         setTimeout(() => {
           clearCanvas();
           refreshSamples();
