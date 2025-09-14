@@ -28,13 +28,12 @@ class CDNBuilder {
       
       console.log('📄 realcaptcha-widget.min.js 생성 완료');
       
-      // 선택적: 개발용 파일들 생성 (CDN 배포에는 불필요)
-      if (process.env.GENERATE_DEV_FILES === 'true') {
-        console.log('📝 개발용 파일들 생성 중...');
-        await this.generateExampleHTML();
-        await this.generateMetadata();
-        await this.generateHashes();
-      }
+      // CDN 배포에 필요한 파일들 생성
+      console.log('📝 CDN 배포 파일들 생성 중...');
+      await this.generateExampleHTML();
+      await this.generateMetadata();
+      await this.generateHashes();
+      await this.generateExampleHtml(); // 새로 추가한 함수
       
       console.log('✅ CDN 빌드 완료!');
       console.log(`📁 출력 디렉토리: ${this.cdnDir}`);
@@ -182,6 +181,94 @@ class CDNBuilder {
     await fs.writeFile(
       path.join(this.cdnDir, 'hashes.json'),
       JSON.stringify(hashes, null, 2)
+    );
+  }
+
+  async generateExampleHtml() {
+    const exampleHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealCaptcha Widget Example</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { text-align: center; }
+        #captcha-widget { margin: 20px 0; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RealCaptcha Widget Example</h1>
+        <p>apiEndpoint 지원 및 captcha_token 통합이 포함된 최신 버전</p>
+        
+        <div id="captcha-widget"></div>
+        
+        <div id="result"></div>
+    </div>
+
+    <!-- React Dependencies -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- RealCaptcha Widget -->
+    <script src="./realcaptcha-widget.min.js"></script>
+    
+    <script>
+        function showResult(result) {
+            const resultDiv = document.getElementById('result');
+            if (result.success) {
+                resultDiv.innerHTML = \`
+                    <div class="result success">
+                        <h3>캡차 완료!</h3>
+                        <p>토큰: \${result.captcha_token}</p>
+                        <p>타입: \${result.captcha_type}</p>
+                    </div>
+                \`;
+            } else {
+                resultDiv.innerHTML = \`
+                    <div class="result error">
+                        <h3>캡차 실패</h3>
+                        <p>\${result.message || '알 수 없는 오류'}</p>
+                    </div>
+                \`;
+            }
+        }
+
+        // RealCaptcha 위젯 초기화
+        function initCaptcha() {
+            if (typeof window.renderRealCaptcha === 'function') {
+                window.renderRealCaptcha('captcha-widget', {
+                    siteKey: 'rc_demo_123456789', // 데모 키
+                    theme: 'light',
+                    size: 'normal',
+                    language: 'ko',
+                    apiEndpoint: 'https://api.realcatcha.com' // 기본값
+                }, function(result) {
+                    console.log('캡차 결과:', result);
+                    showResult(result);
+                });
+            } else {
+                console.error('RealCaptcha 위젯이 로드되지 않았습니다');
+            }
+        }
+
+        // 위젯 로딩 대기
+        if (typeof window.renderRealCaptcha === 'function') {
+            initCaptcha();
+        } else {
+            setTimeout(initCaptcha, 1000);
+        }
+    </script>
+</body>
+</html>`;
+
+    await fs.writeFile(
+      path.join(this.cdnDir, 'example.html'),
+      exampleHtml
     );
   }
 
