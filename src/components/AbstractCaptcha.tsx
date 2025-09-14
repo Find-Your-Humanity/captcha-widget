@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './AbstractCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
+import { sendBehaviorDataToMongo } from '../utils/behaviorDataSender';
 
 interface RemoteImageItem {
   id: number;
@@ -90,10 +91,12 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
     }
   };
 
-  const handleImageClick = (imageId: number) => {
+  const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
+    const newSelectedState = !wasSelected; // 클릭 후의 새로운 선택 상태
     setSelectedImages((prev) => (wasSelected ? prev.filter((id) => id !== imageId) : [...prev, imageId]));
-    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
+    behaviorCollector.current.trackImageSelection(imageId, newSelectedState);
+    behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 
   const handleVerify = async () => {
@@ -121,6 +124,25 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
       console.debug('[AbstractCaptcha] payload /api/abstract-verify', data);
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
+      
+      // 행동 데이터 수집 및 전송
+      try {
+        const behaviorData = {
+          behavior_data: behaviorCollector.current.getMetrics(),
+          pageEvents: {
+            enterTime: behaviorCollector.current.getStartTime(),
+            exitTime: Date.now(),
+            totalTime: Date.now() - behaviorCollector.current.getStartTime()
+          },
+          captcha_type: "abstract"
+        };
+        
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+      } catch (behaviorError) {
+        console.error('행동 데이터 전송 실패:', behaviorError);
+        // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+      }
+      
       if (ok) {
         setUiState('success');
         console.log('Abstract captcha verified successfully!');
@@ -179,7 +201,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
           <div
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-            onClick={() => handleImageClick(image.id)}
+            onClick={(e) => handleImageClick(image.id, e)}
             onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
             onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >

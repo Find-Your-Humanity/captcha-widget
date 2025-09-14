@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './ImageCaptcha.css';
 import ImageBehaviorCollector from './ImageBehaviorCollector';
 import CaptchaOverlay from './CaptchaOverlay';
+import { sendBehaviorDataToMongo } from '../utils/behaviorDataSender';
 
 interface ImageCaptchaProps {
   onSuccess?: (captchaResponse?: any) => void;
@@ -88,8 +89,9 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
     }
   }, [ttl, isVerified]);
 
-  const handleImageClick = (imageId: number, event: MouseEvent) => {
+  const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
+    const newSelectedState = !wasSelected; // 클릭 후의 새로운 선택 상태
     setSelectedImages(prev => {
       if (wasSelected) {
         return prev.filter(id => id !== imageId);
@@ -97,7 +99,8 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
         return [...prev, imageId];
       }
     });
-    behaviorCollector.current.trackImageClick(imageId, event);
+    behaviorCollector.current.trackImageSelection(imageId, newSelectedState);
+    behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 
   const handleVerify = async () => {
@@ -135,6 +138,25 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
       const data: { success?: boolean; attempts?: number; downshift?: boolean } = await resp.json();
       const ok = !!data.success;
       behaviorCollector.current.trackVerifyAttempt(ok);
+      
+      // 행동 데이터 수집 및 전송
+      try {
+        const behaviorData = {
+          behavior_data: behaviorCollector.current.getMetrics(),
+          pageEvents: {
+            enterTime: behaviorCollector.current.getStartTime(),
+            exitTime: Date.now(),
+            totalTime: Date.now() - behaviorCollector.current.getStartTime()
+          },
+          captcha_type: "image"
+        };
+        
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+      } catch (behaviorError) {
+        console.error('행동 데이터 전송 실패:', behaviorError);
+        // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+      }
+      
       if (ok) {
         // 성공: 새로고침하지 않고 성공 상태 유지
         setUiState('success');
@@ -206,7 +228,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
             <div
               key={image.id}
               className={`overlay-cell ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-              onClick={(e) => handleImageClick(image.id, e.nativeEvent)}
+              onClick={(e) => handleImageClick(image.id, e)}
               onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
               onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
             >
