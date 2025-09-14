@@ -91,10 +91,11 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
     }
   };
 
-  const handleImageClick = (imageId: number) => {
+  const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
     setSelectedImages((prev) => (wasSelected ? prev.filter((id) => id !== imageId) : [...prev, imageId]));
     behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
+    behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 
   const handleVerify = async () => {
@@ -199,7 +200,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
           <div
             key={image.id}
             className={`image-item ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-            onClick={() => handleImageClick(image.id)}
+            onClick={(e) => handleImageClick(image.id, e)}
             onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
             onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
           >

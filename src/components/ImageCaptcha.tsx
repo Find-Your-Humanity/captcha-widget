@@ -89,7 +89,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
     }
   }, [ttl, isVerified]);
 
-  const handleImageClick = (imageId: number, event: MouseEvent) => {
+  const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
     setSelectedImages(prev => {
       if (wasSelected) {
@@ -98,7 +98,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
         return [...prev, imageId];
       }
     });
-    behaviorCollector.current.trackImageClick(imageId, event);
+    behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 
   const handleVerify = async () => {
@@ -226,7 +226,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
             <div
               key={image.id}
               className={`overlay-cell ${selectedImages.includes(image.id) ? 'selected' : ''}`}
-              onClick={(e) => handleImageClick(image.id, e.nativeEvent)}
+              onClick={(e) => handleImageClick(image.id, e)}
               onMouseEnter={() => behaviorCollector.current.trackImageHover(image.id, true)}
               onMouseLeave={() => behaviorCollector.current.trackImageHover(image.id, false)}
             >
