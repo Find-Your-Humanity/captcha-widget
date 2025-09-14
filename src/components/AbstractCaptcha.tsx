@@ -63,7 +63,14 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
       setError('');
       setSelectedImages([]);
       setIsVerified(false);
-      const resp = await fetch(`${apiBaseUrl}/api/abstract-captcha`, { method: 'POST' });
+      const actualApiBaseUrl = apiEndpoint || apiBaseUrl;
+      const resp = await fetch(`${actualApiBaseUrl}/api/abstract-captcha`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(siteKey ? { 'X-API-Key': siteKey } : {})
+        }
+      });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       console.debug('[AbstractCaptcha] payload /api/abstract-captcha', data);
@@ -97,6 +104,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
     try {
       setLoading(true);
       const requestBody = { 
+        captcha_token: captchaToken || '', // 캡차 토큰 추가 ✅
         challenge_id: challengeId, 
         selections: selectedImages,
         user_id: null,  // TODO: 실제 사용자 ID로 교체
