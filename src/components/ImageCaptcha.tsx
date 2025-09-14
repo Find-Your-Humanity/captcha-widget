@@ -45,8 +45,14 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
   const fetchChallenge = async () => {
     try {
       setLoading(true);
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
-      const resp = await fetch(`${apiBaseUrl}/api/image-challenge`, { method: 'POST' });
+      const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
+      const resp = await fetch(`${apiBaseUrl}/api/image-challenge`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(siteKey ? { 'X-API-Key': siteKey } : {})
+        }
+      });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: { challenge_id?: string; url?: string; ttl?: number; question?: string } = await resp.json();
       setChallengeId(data.challenge_id || '');
@@ -119,6 +125,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(siteKey ? { 'X-API-Key': siteKey } : {}) },
         body: JSON.stringify({ 
+          captcha_token: captchaToken || '', // 캡차 토큰 추가 ✅
           challenge_id: challengeId, 
           selections: selectedImages,
           user_id: null,  // TODO: 실제 사용자 ID로 교체

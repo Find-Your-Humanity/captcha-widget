@@ -286,6 +286,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       const imageDataUrl = canvas.toDataURL('image/png');
 
       const requestBody = {
+        captcha_token: captchaToken || '', // 캡차 토큰 추가 ✅
         image_base64: imageDataUrl,
         user_id: null,  // TODO: 실제 사용자 ID로 교체
         api_key: siteKey || '',  // API 키를 body에도 포함
@@ -296,7 +297,8 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       
       console.log('🔍 [HandwritingCaptcha] 요청 데이터:', requestBody);
       
-      const response = await fetch(`${apiBaseUrl}/api/handwriting-verify`, {
+      const actualApiBaseUrl = apiEndpoint || apiBaseUrl;
+      const response = await fetch(`${actualApiBaseUrl}/api/handwriting-verify`, {
         method: 'POST',
         credentials: 'include',
         headers: { 
