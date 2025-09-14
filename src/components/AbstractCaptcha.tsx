@@ -93,8 +93,9 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
 
   const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
+    const newSelectedState = !wasSelected; // 클릭 후의 새로운 선택 상태
     setSelectedImages((prev) => (wasSelected ? prev.filter((id) => id !== imageId) : [...prev, imageId]));
-    behaviorCollector.current.trackImageSelection(imageId, !wasSelected);
+    behaviorCollector.current.trackImageSelection(imageId, newSelectedState);
     behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 

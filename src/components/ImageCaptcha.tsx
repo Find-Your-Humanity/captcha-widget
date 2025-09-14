@@ -91,6 +91,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
 
   const handleImageClick = (imageId: number, event: React.MouseEvent) => {
     const wasSelected = selectedImages.includes(imageId);
+    const newSelectedState = !wasSelected; // 클릭 후의 새로운 선택 상태
     setSelectedImages(prev => {
       if (wasSelected) {
         return prev.filter(id => id !== imageId);
@@ -98,6 +99,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
         return [...prev, imageId];
       }
     });
+    behaviorCollector.current.trackImageSelection(imageId, newSelectedState);
     behaviorCollector.current.trackImageClick(imageId, event.nativeEvent);
   };
 
