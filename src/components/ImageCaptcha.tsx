@@ -132,7 +132,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
     setUiState('loading');
     
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
+      const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
       const resp = await fetch(`${apiBaseUrl}/api/imagecaptcha-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(siteKey ? { 'X-API-Key': siteKey } : {}) },
