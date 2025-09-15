@@ -254,6 +254,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       setUiState('loading');
       setLoadingMessage('테스트 모드 검증 중...');
       setTimeout(() => {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 홈페이지로 리다이렉션
+          window.location.href = '/';
+          return;
+        }
+        
         setUiState('success');
         setLoadingMessage('성공!');
         behaviorCollector.current.setVerificationResult(true);
@@ -315,6 +325,16 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       const data: { success: boolean; redirect_url?: string } = await response.json();
 
       if (data.success) {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 홈페이지로 리다이렉션
+          window.location.href = '/';
+          return;
+        }
+        
         setUiState('success');
         behaviorCollector.current.setVerificationResult(true);
         

@@ -144,6 +144,16 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
       }
       
       if (ok) {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 홈페이지로 리다이렉션
+          window.location.href = '/';
+          return;
+        }
+        
         setUiState('success');
         console.log('Abstract captcha verified successfully!');
         // 성공 상태만 표시하고 추가 호출하지 않음

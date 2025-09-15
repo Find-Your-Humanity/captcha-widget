@@ -109,6 +109,16 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
       setUiState('loading');
       setLoadingMessage('테스트 모드 검증 중...');
       setTimeout(() => {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 홈페이지로 리다이렉션
+          window.location.href = '/';
+          return;
+        }
+        
         setUiState('success');
         setLoadingMessage('성공!');
         behaviorCollector.current.trackVerifyAttempt(true);
@@ -158,6 +168,16 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
       }
       
       if (ok) {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 홈페이지로 리다이렉션
+          window.location.href = '/';
+          return;
+        }
+        
         // 성공: 새로고침하지 않고 성공 상태 유지
         setUiState('success');
         setIsVerified(true);
