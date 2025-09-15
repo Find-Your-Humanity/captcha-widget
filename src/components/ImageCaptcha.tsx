@@ -161,7 +161,7 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
           captcha_type: "image"
         };
         
-        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey, apiEndpoint);
       } catch (behaviorError) {
         console.error('행동 데이터 전송 실패:', behaviorError);
         // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음

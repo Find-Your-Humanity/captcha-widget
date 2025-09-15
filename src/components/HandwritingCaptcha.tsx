@@ -107,7 +107,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const refreshSamples = async () => {
     try {
       setLoading(true);
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+      const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || 
         (process.env.NODE_ENV === 'production' 
           ? 'https://api.realcatcha.com'
           : 'http://localhost:8000');
@@ -287,7 +287,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     setUiState('loading');
 
     try {
-             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+             const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || 
          (process.env.NODE_ENV === 'production' 
            ? 'https://api.realcatcha.com'
            : 'http://localhost:8000');
@@ -349,7 +349,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             }
           };
           
-          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey, apiEndpoint);
         } catch (behaviorError) {
           console.error('행동 데이터 전송 실패:', behaviorError);
           // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
@@ -375,7 +375,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             }
           };
           
-          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey, apiEndpoint);
         } catch (behaviorError) {
           console.error('행동 데이터 전송 실패:', behaviorError);
           // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
