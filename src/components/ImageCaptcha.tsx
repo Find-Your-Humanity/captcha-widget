@@ -109,10 +109,23 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
       setUiState('loading');
       setLoadingMessage('테스트 모드 검증 중...');
       setTimeout(() => {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
         setUiState('success');
         setLoadingMessage('성공!');
         behaviorCollector.current.trackVerifyAttempt(true);
         setIsVerified(true);
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          return;
+        }
+        
         setTimeout(() => onSuccess?.(), 300);
       }, 500);
       return;
@@ -151,16 +164,28 @@ const ImageCaptcha: React.FC<ImageCaptchaProps> = ({ onSuccess, siteKey, apiEndp
           captcha_type: "image"
         };
         
-        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey, apiEndpoint);
       } catch (behaviorError) {
         console.error('행동 데이터 전송 실패:', behaviorError);
         // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
       }
       
       if (ok) {
-        // 성공: 새로고침하지 않고 성공 상태 유지
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
+        // 성공 상태 표시
         setUiState('success');
         setIsVerified(true);
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          return;
+        }
       } else {
         // 실패: X 표시 1초 노출 후 오버레이 닫고 새 챌린지 로드
         setUiState('error');

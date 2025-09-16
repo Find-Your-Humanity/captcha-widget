@@ -15,10 +15,11 @@ export interface BehaviorDataRequest {
 export async function sendBehaviorDataToMongo(
   collectionName: string, 
   behaviorData: BehaviorDataRequest,
-  apiKey?: string
+  apiKey?: string,
+  apiEndpoint?: string
 ): Promise<void> {
   try {
-    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+    const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || 
       (process.env.NODE_ENV === 'production' 
         ? 'https://api.realcatcha.com' 
         : 'http://localhost:8000');
@@ -60,3 +61,4 @@ export async function sendBehaviorDataToMongo(
     // 에러가 발생해도 캡차 진행에는 영향을 주지 않음
   }
 }
+

@@ -345,7 +345,20 @@ const Captcha: React.FC<CaptchaProps> = ({
         setState('abstract-captcha');
       } else {
         // 기타 경우 통과 처리 (next_captcha가 null, undefined, 빈 문자열 등)
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
         setState('success');
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 2초 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+          return;
+        }
+        
         if (onComplete) {
           const result: CaptchaResult = {
             success: true,
@@ -368,8 +381,20 @@ const Captcha: React.FC<CaptchaProps> = ({
 
   // 사용자가 기본 캡차를 통과했을 때 호출
   const handleCaptchaSuccess = () => {
-    // 캡차 성공 시 성공 상태로만 변경
+    // 데모 키인지 확인
+    const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+    const isDemoKey = siteKey === DEMO_SITE_KEY;
+    
+    // 성공 상태 표시
     setState('success');
+    
+    if (isDemoKey) {
+      // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+      return;
+    }
   };
 
   const handleButtonClick = (e: React.MouseEvent) => {

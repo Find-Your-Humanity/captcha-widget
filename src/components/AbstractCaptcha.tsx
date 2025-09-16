@@ -29,7 +29,7 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
   const [images, setImages] = useState<RemoteImageItem[]>([]);
   const behaviorCollector = useRef<ImageBehaviorCollector>(new ImageBehaviorCollector());
   const ttlExpiredRef = useRef(false);
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
+  const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://api.realcatcha.com' : 'http://localhost:8000');
 
   useEffect(() => {
     behaviorCollector.current.startTracking();
@@ -137,17 +137,29 @@ const AbstractCaptcha: React.FC<AbstractCaptchaProps> = ({ onSuccess, siteKey, a
           captcha_type: "abstract"
         };
         
-        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey);
+        await sendBehaviorDataToMongo("behavior_data_image", behaviorData, siteKey, apiEndpoint);
       } catch (behaviorError) {
         console.error('행동 데이터 전송 실패:', behaviorError);
         // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
       }
       
       if (ok) {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
         setUiState('success');
         console.log('Abstract captcha verified successfully!');
         // 성공 상태만 표시하고 추가 호출하지 않음
         setIsVerified(true);
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          return;
+        }
         return;
       } else {
         setUiState('error');

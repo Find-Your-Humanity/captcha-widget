@@ -107,7 +107,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
   const refreshSamples = async () => {
     try {
       setLoading(true);
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+      const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || 
         (process.env.NODE_ENV === 'production' 
           ? 'https://api.realcatcha.com'
           : 'http://localhost:8000');
@@ -254,9 +254,22 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       setUiState('loading');
       setLoadingMessage('테스트 모드 검증 중...');
       setTimeout(() => {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
         setUiState('success');
         setLoadingMessage('성공!');
         behaviorCollector.current.setVerificationResult(true);
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          return;
+        }
+        
         setTimeout(() => onSuccess?.(), 300);
       }, 500);
       return;
@@ -277,7 +290,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
     setUiState('loading');
 
     try {
-             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 
+             const apiBaseUrl = apiEndpoint || process.env.REACT_APP_API_BASE_URL || 
          (process.env.NODE_ENV === 'production' 
            ? 'https://api.realcatcha.com'
            : 'http://localhost:8000');
@@ -315,6 +328,10 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
       const data: { success: boolean; redirect_url?: string } = await response.json();
 
       if (data.success) {
+        // 데모 키인지 확인
+        const DEMO_SITE_KEY = 'rc_live_f49a055d62283fd02e8203ccaba70fc2';
+        const isDemoKey = siteKey === DEMO_SITE_KEY;
+        
         setUiState('success');
         behaviorCollector.current.setVerificationResult(true);
         
@@ -329,10 +346,18 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             }
           };
           
-          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey, apiEndpoint);
         } catch (behaviorError) {
           console.error('행동 데이터 전송 실패:', behaviorError);
           // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
+        }
+        
+        if (isDemoKey) {
+          // 데모 키인 경우 success 애니메이션 완료 후 홈페이지로 리다이렉션
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          return;
         }
         
         const envTarget = process.env.REACT_APP_SUCCESS_REDIRECT_URL;
@@ -355,7 +380,7 @@ const HandwritingCaptcha: React.FC<HandwritingCaptchaProps> = ({ onSuccess, samp
             }
           };
           
-          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey);
+          await sendBehaviorDataToMongo("behavior_data_writing", behaviorData, siteKey, apiEndpoint);
         } catch (behaviorError) {
           console.error('행동 데이터 전송 실패:', behaviorError);
           // 행동 데이터 전송 실패는 캡차 진행에 영향을 주지 않음
