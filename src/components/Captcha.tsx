@@ -7,6 +7,7 @@ import { addBehaviorData, clearBehaviorData } from '../utils/behaviorData';
 import { detectDevice } from '../utils/deviceDetector';
 import { handleTouchStart, handleTouchMove, handleTouchEnd, saveMobileBehaviorData } from '../utils/mobileBehaviorData';
 
+
 interface BehaviorData {
   mouseMovements: Array<{ x: number; y: number; timestamp: number }>;
   mouseClicks: Array<{ x: number; y: number; timestamp: number; type: string }>;
@@ -321,7 +322,7 @@ const Captcha: React.FC<CaptchaProps> = ({
       }
 
       // confidence_score가 0-9이면 항상 에러 상태로 처리
-      if (data.confidence_score !== undefined && data.confidence_score <= 9) {
+      if (data.confidence_score !== undefined && data.confidence_score >= 96) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setState('error');

@@ -2,6 +2,7 @@
  * 캡차별 행동 데이터를 MongoDB에 전송하는 유틸리티 함수
  */
 
+
 export interface BehaviorDataRequest {
   behavior_data: any;
   pageEvents: {
