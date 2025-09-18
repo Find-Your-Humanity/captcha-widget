@@ -32,9 +32,8 @@ interface CaptchaResult {
   success: boolean;
   captcha_token?: string; // 일회성 토큰
   captcha_type?: string;
-  confidence_score?: number;
-  is_bot_detected?: boolean;
   error?: string;
+  // 보안상 민감한 정보 제거: confidence_score, is_bot_detected
 }
 
 type CaptchaState = 'initial' | 'loading' | 'success' | 'error' | 'image-captcha' | 'abstract-captcha' | 'handwriting-captcha';
@@ -64,7 +63,7 @@ const Captcha: React.FC<CaptchaProps> = ({
   const [handwritingSamples, setHandwritingSamples] = useState<string[]>([]);
   const [captchaToken, setCaptchaToken] = useState<string>(''); // 일회성 토큰 저장
   const [sessionId, setSessionId] = useState<string>(''); // 체크박스 세션 ID
-  const [attempts, setAttempts] = useState<number>(0); // 시도 횟수 추적
+  // 시도 횟수 추적은 백엔드에서 처리하므로 제거
   const [isDisabled, setIsDisabled] = useState<boolean>(false); // 컴포넌트 비활성화 상태
   const checkboxRef = useRef<HTMLDivElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -95,10 +94,6 @@ const Captcha: React.FC<CaptchaProps> = ({
       window.addEventListener('click', handleMouseEvent);
       window.addEventListener('scroll', handleScroll);
 
-      // 자동 저장 비활성화 (성능 최적화)
-      // autoSaveIntervalRef.current = setInterval(() => {
-      //   saveBehaviorData(false);
-      // }, 10000);
     } else {
       // 모바일: 터치 이벤트 리스너 등록
       window.addEventListener('touchstart', handleTouchStart);
@@ -297,9 +292,8 @@ const Captcha: React.FC<CaptchaProps> = ({
           durationMs,
           next_captcha: data?.next_captcha,
           captcha_type: data?.captcha_type,
-          confidence_score: data?.confidence_score,
+          // 보안상 민감한 정보 제거: confidence_score, is_bot_detected
           ml_service_used: data?.ml_service_used,
-          is_bot_detected: data?.is_bot_detected,
         };
         console.debug('[Captcha] summary /api/next-captcha', preview);
       } catch {}
@@ -312,26 +306,18 @@ const Captcha: React.FC<CaptchaProps> = ({
         setSessionId(data.session_id);
       }
 
-      // 봇 차단 확인
-      if (data.is_blocked) {
+      // 백엔드에서 처리된 상태에 따른 처리 (보안 강화)
+      if (data.status === 'blocked') {
         setState('error');
         setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
-        setIsDisabled(true); // 컴포넌트 비활성화
+        setIsDisabled(true);
         inFlightRef.current = false;
         return;
       }
 
-      // confidence_score가 0-9이면 항상 에러 상태로 처리
-      if (data.confidence_score !== undefined && data.confidence_score >= 60) {
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
+      if (data.status === 'bot_suspected') {
         setState('error');
-        setErrorMessage('봇으로 의심됩니다. 다시 확인해주세요.');
-        
-        // 3번 시도 후 컴포넌트 비활성화
-        if (newAttempts >= 3) {
-          setIsDisabled(true);
-        }
+        setErrorMessage(data.error_message || '봇으로 의심됩니다. 다시 확인해주세요.');
         inFlightRef.current = false;
         return;
       }
@@ -364,9 +350,8 @@ const Captcha: React.FC<CaptchaProps> = ({
           const result: CaptchaResult = {
             success: true,
             captcha_token: data.captcha_token,
-            captcha_type: data.captcha_type,
-            confidence_score: data.confidence_score,
-            is_bot_detected: data.is_bot_detected
+            captcha_type: data.captcha_type
+            // 보안상 민감한 정보 제거: confidence_score, is_bot_detected
           };
           onComplete(result);
         }
